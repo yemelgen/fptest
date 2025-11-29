@@ -20,17 +20,17 @@ async function collectPrototypes() {
 
                 try {
                     const desc = Object.getOwnPropertyDescriptor(target, prop);
+                    const descriptorString = [
+                        desc?.configurable ? 'c' : '-',
+                        desc?.enumerable ? 'e' : '-',
+                        desc?.writable ? 'w' : '-',
+                        ('value' in desc) ? 'v' : '-',
+                        desc?.get ? 'g' : '-',
+                        desc?.set ? 's' : '-'
+                    ].join('');
                     out.push({
                         name: prop,
-                        descriptor: {
-                            configurable: desc?.configurable ?? null,
-                            enumerable: desc?.enumerable ?? null,
-                            writable: desc?.writable ?? null,
-                            hasValue: "value" in desc,
-                            hasGetter: !!desc.get,
-                            hasSetter: !!desc.set
-                        },
-                        // Instead of classifying, just collect raw strings
+                        descriptor: descriptorString,
                         stringValue:
                             desc?.value && typeof desc.value === "function"
                                 ? String(desc.value)

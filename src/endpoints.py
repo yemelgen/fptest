@@ -15,7 +15,7 @@ def headers_to_dict(headers):
 def calculate_fingerprint():
     data = request.json 
     dt =  datetime.now()
-    data['serverHints'] = headers_to_dict(request.headers),
+    data['headers'] = headers_to_dict(request.headers),
 
     # compute features & hashes
     features = fingerprint.extract_features(data)

@@ -1,3 +1,133 @@
+const WEBGL_PARAMETERS = [
+    // High entropy limits
+    'MAX_TEXTURE_SIZE',
+    'MAX_CUBE_MAP_TEXTURE_SIZE',
+    'MAX_RENDERBUFFER_SIZE',
+    'MAX_VIEWPORT_DIMS',
+    'MAX_VERTEX_ATTRIBS',
+    'MAX_VERTEX_UNIFORM_VECTORS',
+    'MAX_FRAGMENT_UNIFORM_VECTORS',
+    'MAX_VARYING_VECTORS',
+    'MAX_COMBINED_TEXTURE_IMAGE_UNITS',
+    'MAX_TEXTURE_IMAGE_UNITS',
+    'MAX_VERTEX_TEXTURE_IMAGE_UNITS',
+    'MAX_ELEMENTS_VERTICES',
+    'MAX_ELEMENTS_INDICES',
+    'ALIASED_POINT_SIZE_RANGE',
+    'ALIASED_LINE_WIDTH_RANGE',
+
+    // GLSL / vendor strings
+    'SHADING_LANGUAGE_VERSION',
+    'VERSION',
+    'RENDERER',
+    'VENDOR',
+
+    // WebGL2 uniform component limits
+    'MAX_VERTEX_UNIFORM_COMPONENTS',
+    'MAX_FRAGMENT_UNIFORM_COMPONENTS',
+    'MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS',
+    'MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS',
+
+    // Texture / LOD / sampling
+    'MAX_TEXTURE_LOD_BIAS',
+    'MAX_ARRAY_TEXTURE_LAYERS',
+    'MAX_3D_TEXTURE_SIZE',
+
+    // Draw buffers / color attachments
+    'MAX_DRAW_BUFFERS',
+    'MAX_COLOR_ATTACHMENTS',
+    'MAX_SAMPLES',
+
+    // Transform feedback
+    'MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS',
+    'MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS',
+    'MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS',
+
+    // UBO limites 
+    'MAX_VERTEX_UNIFORM_BLOCKS',
+    'MAX_FRAGMENT_UNIFORM_BLOCKS',
+    'MAX_COMBINED_UNIFORM_BLOCKS',
+    'MAX_UNIFORM_BUFFER_BINDINGS',
+    'MAX_UNIFORM_BLOCK_SIZE',
+    'UNIFORM_BUFFER_OFFSET_ALIGNMENT',
+
+    // IO / Component limits
+    'MAX_VERTEX_OUTPUT_COMPONENTS',
+    'MAX_FRAGMENT_INPUT_COMPONENTS',
+
+    // Timeouts
+    'MAX_SERVER_WAIT_TIMEOUT',
+    'MAX_CLIENT_WAIT_TIMEOUT_WEBGL',
+
+    // Mask defaults
+    'SUBPIXEL_BITS',
+    'STENCIL_VALUE_MASK',
+    'STENCIL_BACK_VALUE_MASK',
+    'STENCIL_WRITEMASK',
+    'STENCIL_BACK_WRITEMASK',
+
+    // Extra entropy
+    'DEPTH_BITS',
+    'STENCIL_BITS',
+    'RED_BITS',
+    'GREEN_BITS',
+    'BLUE_BITS',
+    'ALPHA_BITS',
+    'POLYGON_OFFSET_UNITS',
+    'POLYGON_OFFSET_FACTOR',
+    'SAMPLE_BUFFERS',
+    'SAMPLES',
+    'SAMPLE_COVERAGE_VALUE',
+    'SAMPLE_COVERAGE_INVERT',
+    'UNPACK_ALIGNMENT',
+    'PACK_ALIGNMENT',
+    'VIEWPORT',
+    'SCISSOR_BOX',
+    'CULL_FACE_MODE',
+    'FRONT_FACE',
+    'BLEND_COLOR',
+];
+
+const WEBGL_EXTENSION_PARAMETERS = {
+    WEBGL_debug_renderer_info: [
+        "UNMASKED_VENDOR_WEBGL",
+        "UNMASKED_RENDERER_WEBGL"
+    ],
+    EXT_texture_filter_anisotropic: [
+        "MAX_TEXTURE_MAX_ANISOTROPY_EXT"
+    ],
+    EXT_color_buffer_float: [
+        "MAX_RENDERBUFFER_SIZE"
+    ],
+    EXT_color_buffer_half_float: [
+        "MAX_RENDERBUFFER_SIZE"
+    ],
+    WEBGL_compressed_texture_s3tc: [
+        "COMPRESSED_TEXTURE_FORMATS"
+    ],
+    WEBGL_compressed_texture_s3tc_srgb: [
+        "COMPRESSED_TEXTURE_FORMATS"
+    ],
+    WEBGL_compressed_texture_etc: [
+        "COMPRESSED_TEXTURE_FORMATS"
+    ],
+    WEBGL_compressed_texture_etc1: [
+        "COMPRESSED_TEXTURE_FORMATS"
+    ],
+    WEBGL_compressed_texture_pvrtc: [
+        "COMPRESSED_TEXTURE_FORMATS"
+    ],
+    WEBGL_compressed_texture_astc: [
+        "COMPRESSED_TEXTURE_FORMATS"
+    ],
+    EXT_shader_texture_lod: [],
+    OES_texture_float: [],
+    OES_texture_half_float: [],
+    OES_element_index_uint: [],
+    OES_vertex_array_object: [],
+    WEBGL_lose_context: [],
+};
+
 async function collectVideoCard() {
     const canvas = document.createElement("canvas");
     const gl =
@@ -78,6 +208,10 @@ async function collectWebGL() {
             // Extra probes
             shaderCompile: shaderCompileCheck(gl),
             internalFormats: getInternalFormats(gl),
+
+            // Anti-aliasing info
+            aaOffset: gl.getParameter(gl.SAMPLES),
+            aaCapOffset: gl.getParameter(gl.SAMPLES) < gl.getParameter(gl.MAX_SAMPLES)
         };
 
         return { webgl: results };
@@ -90,16 +224,6 @@ async function collectWebGL() {
 function isWebGL2(gl) {
     return typeof WebGL2RenderingContext !== 'undefined' && 
            gl instanceof WebGL2RenderingContext;
-}
-
-function isWebGLConstant(key, gl) {
-    return (
-        key === key.toUpperCase() &&
-        key.length >= 2 && // Minimum meaningful constant length
-        typeof gl[key] === 'number' && // WebGL constants are numbers
-        !key.startsWith('_') &&
-        !['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(key[0]) // Not numeric
-    );
 }
 
 // Shader compile quirk test
@@ -160,60 +284,45 @@ function getInternalFormats(gl) {
     return results;
 }
 
-function getWebGLConstants(gl) {
-    const constants = [];
-    let current = gl;
-    
-    // Walk up the prototype chain
-    while (current !== null && current !== Object.prototype) {
-        const keys = Object.getOwnPropertyNames(current);
-        
-        for (const key of keys) {
-            if (isWebGLConstant(key, gl)) {
-                constants.push(key);
-            }
-        }
-        
-        current = Object.getPrototypeOf(current);
-    }
-    
-    return [...new Set(constants)]; // Remove duplicates
-}
-
 function getWebGLParameters(gl) {
-    const webglConstants = getWebGLConstants(gl);
     const params = {};
-    for (const constant of webglConstants) {
+
+    for (const name of WEBGL_PARAMETERS) {
+        const constant = gl[name];
+        if (typeof constant !== "number") {
+            params[name] = null;
+            continue;
+        }
         try {
-            params[constant] = gl.getParameter(gl[constant]);
-        } catch (e) {}
+            params[name] = gl.getParameter(constant);
+        } catch {
+            params[name] = null; 
+        }
     }
+
     return params;
 }
 
 function getExtensionParameters(gl) {
-    const parameters = {};
+    const out = {};
     const extensions = gl.getSupportedExtensions() || [];
-    
-    for (const extName of extensions) {
-        try {
-            const extension = gl.getExtension(extName);
-            if (extension) {
-                parameters[extName] = {};
-                
-                // Get extension-specific parameters
-                const extConstants = getWebGLConstants(extension);
-                for (const constantName of extConstants) {
-                    const code = extension[constantName];
-                    try {
-                        parameters[extName][constantName] = gl.getParameter(code);
-                    } catch (e) {}
-                }
+
+    for (const name of extensions) {
+        const ext = gl.getExtension(name);
+        if (!ext) continue;
+
+        out[name] = {};
+        const allowed = WEBGL_EXTENSION_PARAMETERS[name] || [];
+
+        for (const paramName of allowed) {
+            try {
+                const enumValue = ext[paramName];
+                out[name][paramName] = gl.getParameter(enumValue);
+            } catch {
+                out[name][paramName] = null;
             }
-        } catch (e) {
-            parameters[extName] = { error: e.message };
         }
     }
-    
-    return parameters;
+
+    return out;
 }
