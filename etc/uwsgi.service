@@ -5,9 +5,9 @@ After=network.target
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/srv/fpdata
-Environment="PATH=/srv/fpdata/venv/bin"
-ExecStart=/srv/fpdata/venv/bin/uwsgi --ini etc/uwsgi.ini
+WorkingDirectory=/srv/fptest
+Environment="PATH=/srv/fptest/venv/bin"
+ExecStart=/srv/fptest/venv/bin/uwsgi --ini etc/uwsgi.ini
 
 [Install]
 WantedBy=multi-user.target

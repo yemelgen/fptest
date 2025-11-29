@@ -4,7 +4,7 @@ from endpoints import fingerprint_router
 
 
 app = Flask(__name__, static_folder='static')
-app.register_blueprint(fingerprint_router, url_prefix='/api/fpdata')
+app.register_blueprint(fingerprint_router, url_prefix='/api/fptest')
 
 @app.route("/")
 def index():

@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify
 import fingerprint
 
 
-fingerprint_router = Blueprint('fpdata', __name__)
+fingerprint_router = Blueprint('fptest', __name__)
 
 def headers_to_dict(headers):
     # Convert Headers object into plain dict (for JSON injection)
