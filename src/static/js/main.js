@@ -97,6 +97,7 @@ async function runCollectors() {
         const response = await fetch("/api/fptest/calculate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            cache: "no-store",
             body: JSON.stringify(results)
         });
 
