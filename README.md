@@ -1,13 +1,13 @@
 
 
-# Fingerprint Data Collection Tools
+# Browser Fingerprint Tester
 
-A lightweight browser fingerprinting framework built for research and analysis.  
+A lightweight browser fingerprint testing framework built for research and analysis.  
 It uses pure JavaScript to collect client-side data, which you can then analyze server-side with your own tools.  
 
 The framework gathers a wide range of signals (Canvas, WebGL, ClientRects, Fonts, Headers, etc.).
 
-> **Live Demo**: [See your browser fingerprint now](https://dev.yemel.org/fpdata)
+> **Live Demo**: [See your browser fingerprint now](https://dev.yemel.org/fptest)
 
 
 ### Use Cases
@@ -16,10 +16,12 @@ The framework gathers a wide range of signals (Canvas, WebGL, ClientRects, Fonts
 - Explore unique browser/hardware features for research
 
 
-> If you're looking for more advanced solution, check out [FingerprintJS](https://github.com/fingerprintjs/fingerprintjs).
+> If you're looking for more advanced solution, check out [CreepJS](https://github.com/abrahamjuliot/creepjs)
 
 
 ## Features
+
+No Node.js or external tooling required - just plug and go.
 
 Modular JS collectors for:
  - Canvas & 2D rendering
@@ -37,7 +39,7 @@ Stable hashing of collected data:
 
 1. Fetch repo
 ```bash
-git clone https://github.com/yemelgen/fpdata.git
+git clone https://github.com/yemelgen/fptest.git
 ```
 
 2. Install dependencies
