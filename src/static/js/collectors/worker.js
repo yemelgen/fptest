@@ -42,27 +42,74 @@ async function collectWorker() {
             return { min, max, mean, variance, hash };
         }
 
+        function getLocaleData() {
+            let systemCurrencyLocale = null;
+            let engineCurrencyLocale = null;
+
+            try {
+                const fmt = new Intl.NumberFormat();
+                systemCurrencyLocale = fmt.resolvedOptions().locale || null;
+            } catch (_) {}
+
+            try {
+                const fmt2 = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
+                engineCurrencyLocale = fmt2.resolvedOptions().locale || null;
+            } catch (_) {}
+
+            return {
+                systemCurrencyLocale,
+                engineCurrencyLocale
+            };
+        }
+
+        function getTimezoneData() {
+            return {
+                timezoneOffset: new Date().getTimezoneOffset(),
+                timezoneLocation: Intl.DateTimeFormat().resolvedOptions().timeZone || null
+            };
+        }
+
+        function getWebglInfo() {
+            try {
+                const canvas = new OffscreenCanvas(64, 64);
+                const gl = canvas.getContext("webgl");
+                if (!gl) return { webglVendor: null, webglRenderer: null };
+
+                const ext = gl.getExtension("WEBGL_debug_renderer_info");
+                if (!ext) {
+                    return { webglVendor: null, webglRenderer: null };
+                }
+
+                return {
+                    webglVendor: gl.getParameter(ext.UNMASKED_VENDOR_WEBGL),
+                    webglRenderer: gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
+                };
+            } catch (_) {
+                return { webglVendor: null, webglRenderer: null };
+            }
+        }
+
         self.onmessage = () => {
-            // Performance timing
+            // Performance test
             const t0 = performance.now();
             const arr = new Float32Array(256);
             for (let i = 0; i < arr.length; i++) {
-                arr[i] = (Math.sin(i) * Math.random());
+                arr[i] = Math.sin(i) * Math.random();
             }
             const t1 = performance.now();
 
             // Endianness
-            const buffer = new ArrayBuffer(4);
-            new DataView(buffer).setUint32(0, 0x11223344, true);
-            const isLittleEndian = new Uint8Array(buffer)[0] === 0x44;
+            const buf = new ArrayBuffer(4);
+            new DataView(buf).setUint32(0, 0x11223344, true);
+            const isLittleEndian = new Uint8Array(buf)[0] === 0x44;
 
-            // Stack style
+            // Stack format
             const stackFormat = (() => {
                 try { throw new Error("worker_test"); }
                 catch (e) { return e.stack || null; }
             })();
 
-            // Crypto test
+            // Crypto
             let cryptoValues = null;
             try {
                 const tmp = new Uint32Array(8);
@@ -73,15 +120,16 @@ async function collectWorker() {
             self.postMessage({
                 worker: {
                     supported: true,
-                    performanceResolution: (t1 - t0),
+                    performanceResolution: t1 - t0,
                     timeOrigin: performance.timeOrigin || null,
                     isLittleEndian,
                     randomSummary: summarizeFloat32(arr),
                     cryptoValues,
                     navigator: safeNavigator(),
-                    errors: {
-                        stackFormat
-                    }
+                    errors: { stackFormat },
+                    locale: getLocaleData(),
+                    timezone: getTimezoneData(),
+                    webgl: getWebglInfo()
                 }
             });
         };
