@@ -137,26 +137,34 @@ img {
     font-size: 13px;
     line-height: 1.5;
 }
-#output details { margin-left: 16px; }
-#output > details { margin-left: 0; }
+#output .json-content { margin-left: 14px; }
+#output details { margin-left: 0; }
 #output summary {
     cursor: pointer;
     list-style: none;
     color: #aaaaaa;
 }
-#output summary::before {
+#output summary::before,
+#output .json-row::before {
     content: "\25B6";
     display: inline-block;
     width: 14px;
     font-size: 10px;
+    color: transparent;
+}
+#output .json-row:has(> details)::before {
+    display: none;
+}
+#output summary::before {
     color: #cc9933;
     transition: transform 0.15s;
 }
 #output details[open] > summary::before {
     transform: rotate(90deg);
 }
-#output .json-content { margin-left: 16px; }
-#output .json-row { padding: 1px 0; }
+#output .json-row {
+    padding: 1px 0;
+}
 #output .json-key { color: #aaaaaa; }
 #output .json-string { color: #ce9178; }
 #output .json-number { color: #b5cea8; }
