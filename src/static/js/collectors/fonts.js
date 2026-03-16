@@ -45,15 +45,7 @@ const web_fonts = [
 ];
 
 const all_fonts = [
-    " 20", " Ahom", " Assets", " BT", " Bk BT", " CJK JP", " CJK KR", " CJK TC",
-    " CN", " Emoji", " Fallback", " HK", " ITC", " MN", " MS", " MS Bold", " MT",
-    " MT Extra ", " Md BT", " Mono", " Myanmar", " OT", " Pitch", " Pro",
-    " Pro W3", " Pro W4", " ProN", " ProN W6", " Regular", " SE", " SIL",
-    " Sangam MN", " Sans Narr", " Semilight", " Shadow", " Std", " Std W8",
-    " StdN", " StdN W8", " TW", " TW MBE", " UI", " UI Semili", " W3", " W6",
-    "&18", "-apple-sys", "-apple-system", "-thin", "1246722iMcrCL",
-    "1563180eZsAyT", "2 BT", "590534WqLsOK", "671472LlGEvb", "7FvKKzx",
-    "956488pypcMF", "AR PL UKai", "AR PL UMin", "ARNO PRO", "Abyssinica",
+    "AR PL UKai", "AR PL UMin", "ARNO PRO", "Abyssinica",
     "Academy En", "Adlam", "Adobe Deva", "Agency FB", "Al Bayan", "Al Nile",
     "Al Tarikh", "Albanian", "Algerian", "American T", "Ani", "AnjaliOldL",
     "Apple Brai", "Apple Braille Outline 6 Dot", "Apple Braille Outline 8 Dot",
@@ -79,8 +71,8 @@ const all_fonts = [
     "Caucasian ", "Centaur", "Century", "Century Go", "Century Sc", "Chalkduste",
     "Charter", "Charter Bl", "Charter Black", "Chilanka", "Chiller", "Clarendon",
     "Colonna MT", "Comic Sans MS Bold", "Cooper Bla", "Coptic", "Corbel Lig",
-    "Corsiva He", "Corsiva Hebrew", "Courier 10", "Cuneiform", "D050000L",
-    "DIN Altern", "DIN Alternate", "DIN Condensed", "DL2 Assets", "Damascus",
+    "Corsiva He", "Corsiva Hebrew", "Courier 10", "Cuneiform",
+    "DIN Altern", "DIN Alternate", "DIN Condensed", "Damascus",
     "DecoType Naskh", "DejaVu San", "DejaVu Ser", "DengXian", "DengXian L",
     "Devanagari", "Devanagari MT", "Devanagari Sangam MN", "Dhurjati", "Didot",
     "Diwan Kufi", "Diwan Thul", "Diwan Thuluth", "Dyuthi", "EUROSTILE",
@@ -228,42 +220,8 @@ const all_fonts = [
     "Warang Cit", "Waree", "Waseem", "Webdings R", "Wide Latin", "Wingdings ",
     "Wingdings 2", "Wingdings 3", "YaHei", "YaHei Ligh", "YaHei UI", "YaHei UI L",
     "Yi Baiti R", "Yrsa", "Yrsa Light", "Yrsa Mediu", "Yrsa SemiB", "Yu Gothic",
-    "Yu Gothic ", "Z003", "ZWAdobeF", "Zapf Dingb", "__proto__", "aakar",
-    "absolute", "ack", "ada", "aku Gothic", "alamSans", "ali", "alsD",
-    "alsD-Regul", "alsSm", "alsSm-Regu", "alsUp", "alsUp-Bold", "alsUp-Regu",
-    "alsUpD", "alsUpD-Bol", "alsUpD-Reg", "alsUpSm", "alsUpSm-Re", "am MN",
-    "aments", "anagari", "angam MN", "angla", "ans GB", "ans GB W3", "ans W1",
-    "ans W3", "ans W5", "ans W6", "ans W7", "ans W8", "ans W9", "appendChil",
-    "apply", "aption", "arati", "arial", "aru Gothic", "askh", "ate", "ative",
-    "ats", "ayalam", "bind", "body", "brew", "c MT", "ce Sans Se", "ce Special",
-    "cery", "chine Uni", "ck Oblique", "code", "code-Bold", "code-BoldI",
-    "code-Regul", "console", "constructo", "cript", "cursive", "d Demi Bol",
-    "d Heavy", "d Medium", "d Style", "d Ultra Li", "d.1.1", "ded MT Bol",
-    "default", "dhand", "dium", "div", "dwriting", "e 6 Dot", "e Gothic B",
-    "e Gothic L", "eSym", "eSym-Bold", "eSym-Regul", "eading", "egular", "elugu",
-    "emibold", "emilight", "ent", "evanagari", "ew Scholar", "ext", "ext Regula",
-    "filter", "fontFamily", "fontSize", "g CN", "g HK", "g TW", "gam MN", "gari",
-    "ght", "graved LET", "gular", "h Text MT", "hic", "hic Semili", "hlavi",
-    "hoolbook", "ian", "ic Regular", "ieroglyphs", "ight", "incho Pro",
-    "incho Pro ", "incho ProN", "info", "ing", "inotype", "ipi", "ipt", "istoric",
-    "istoric Re", "itals", "itling MT", "ium", "kui", "l Classica", "l-Bold",
-    "l-BoldItal", "lLmMwWiI0O", "lack", "lar", "lay", "left", "lid", "ligraphy",
-    "liq Urdu", "lle", "lle Outlin", "lle Pinpoi", "log", "m MT", "map", "mese",
-    "moji", "moji Regul", "mry_KacstQ", "n FB", "nagari", "nagari 714",
-    "nal Pahlav", "nal Parthi", "nction() ", "nd ITC", "nde", "ndensed", "ndon",
-    "ngam MN", "no-real-fo", "nt 6 Dot", "nt-123", "nt-590", "o PS", "oSym",
-    "oSym-Bold", "ode MS", "offsetHeig", "offsetWidt", "old", "ols", "oman",
-    "ondensed", "ori1Uni", "othic", "othic Book", "othic Medi", "othic Neo",
-    "padmaa", "padmaa-Bol", "prototype", "pt MT", "ption", "r Emoji", "r-HouseScr",
-    "ramaic", "rati", "rdGK", "reeSym", "reeSym-Bol", "return (fu", "rif",
-    "rif Regula", "riter", 'rn this")(', "s FB", "s ITC", "s Mono", "s Narrow",
-    "s Regular", "s Typewrit", "s Unicode", "s Unicode ", "sans-serif", "sed",
-    "sole", "sole Regul", "some", "span", "stemFont", "system-ui", "t Cherokee",
-    "t Condense", "t Light", "t Medium", "t SemiBold", "t Ultra Li", "tB Regular",
-    "table", "talic", "tem", "thic", "tmap", "toString", "top", "traLight",
-    "trace", "ujarati", "ukhi", "ular", "urSym", "urSym-Bold", "urn", "uth",
-    "utkal", "veSym", "warn", "weiler", "xtB", "xtB Regula", "xtra Bold", "yalam",
-    "ymbol", "ymbol Regu", "ymbols PS", "ypewriter", "ystem",
+    "Yu Gothic ", "Z003", "Zapf Dingb", "aakar",
+    "padmaa", "padmaa-Bol", "utkal",
 ];
 
 
@@ -307,47 +265,49 @@ async function testFonts(fontList) {
     span.style.top = '-9999px';
     document.body.appendChild(span);
 
-    const baselines = {};
-    const baseFamilies = ['monospace', 'serif', 'sans-serif'];
+    try {
+        const baselines = {};
+        const baseFamilies = ['monospace', 'serif', 'sans-serif'];
 
-    const testStrings = [
-        'mmmmmmmmmmlli',
-        'wwwwwwwwww',
-        'iiiiiiiiii',
-        'abcdefghiJKL',
-        '1234567890',
-        'ÅßÇÐØÞåßçđøþ',
-        'ЖжЮюЯя',
-    ];
+        const testStrings = [
+            'mmmmmmmmmmlli',
+            'wwwwwwwwww',
+            'iiiiiiiiii',
+            'abcdefghiJKL',
+            '1234567890',
+            'ÅßÇÐØÞåßçđøþ',
+            'ЖжЮюЯя',
+        ];
 
-    // Collect baseline widths for each fallback
-    for (const base of baseFamilies) {
-        span.style.fontFamily = base;
-        baselines[base] = testStrings.map(str => {
-            span.textContent = str;
-            return span.getBoundingClientRect().width;
-        });
-    }
-
-    for (const font of fontList) {
-        let detected = false;
-
+        // Collect baseline widths for each fallback
         for (const base of baseFamilies) {
-            span.style.fontFamily = `"${font}",${base}`;
-            for (let i = 0; i < testStrings.length; i++) {
-                span.textContent = testStrings[i];
-                const width = span.getBoundingClientRect().width;
-                if (Math.abs(width - baselines[base][i]) > 1) {
-                    detected = true;
-                    break;
-                }
-            }
-            if (detected) break;
+            span.style.fontFamily = base;
+            baselines[base] = testStrings.map(str => {
+                span.textContent = str;
+                return span.getBoundingClientRect().width;
+            });
         }
 
-        if (detected) availableFonts.push(font);
-    }
+        for (const font of fontList) {
+            let detected = false;
 
-    span.remove();
+            for (const base of baseFamilies) {
+                span.style.fontFamily = `"${font}",${base}`;
+                for (let i = 0; i < testStrings.length; i++) {
+                    span.textContent = testStrings[i];
+                    const width = span.getBoundingClientRect().width;
+                    if (Math.abs(width - baselines[base][i]) > 1) {
+                        detected = true;
+                        break;
+                    }
+                }
+                if (detected) break;
+            }
+
+            if (detected) availableFonts.push(font);
+        }
+    } finally {
+        span.remove();
+    }
     return availableFonts;
 }

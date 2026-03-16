@@ -1,5 +1,5 @@
 async function collectStorage() {
-    let local = false, session = false, indexed = false, quota = null, usage = null;
+    let local = false, session = false, indexed = false, webSQL = false, quota = null, usage = null;
 
     try {
         localStorage.setItem("fp_test", "1");
@@ -23,9 +23,9 @@ async function collectStorage() {
     } catch {}
 
     return { storage: {
-        localStorage: local, 
-        sessionStorage: session, 
-        indexedDB: indexed, 
+        localStorage: local,
+        sessionStorage: session,
+        indexedDB: indexed,
         webSQL: webSQL,
         quota, usage
     } };

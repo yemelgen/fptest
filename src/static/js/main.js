@@ -41,6 +41,11 @@ async function runCollectors() {
         "detectVendorFlavors",
         "runRectTests",
         "runCollectors",
+        "testFunction",
+        "testProtoMethod",
+        "testPixelNoise",
+        "testEmojiMetrics",
+        "collectVoices",
     ]
     const collectors = [
         collectNavigator,
@@ -71,6 +76,13 @@ async function runCollectors() {
         collectCSSFeatures,
         collectTLS,
         collectWorker,
+        collectLies,
+        collectHeadless,
+        collectIntl,
+        collectSVG,
+        collectWindowKeys,
+        collectWebRTC,
+        collectResistance,
     ];
 
     window.__collectorMarkers = window.__collectorMarkers || {};
@@ -85,16 +97,27 @@ async function runCollectors() {
 
     const results = {};
     for (let fn of collectors) {
+        const name = fn.name || 'unknown';
+        console.log(`[fptest] running: ${name}`);
         try {
-            Object.assign(results, await fn());
+            // 10s timeout per collector to prevent hangs
+            const result = await Promise.race([
+                fn(),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('timeout')), 10000)
+                )
+            ]);
+            Object.assign(results, result);
+            console.log(`[fptest] done: ${name}`);
         } catch (e) {
-            results[fn.name] = { error: e.message };
+            console.warn(`[fptest] failed: ${name} — ${e.message}`);
+            results[name] = { error: e.message };
         }
     }
 
     try {
         // Send to server and get response
-        const response = await fetch("/api/fptest/calculate", {
+        const response = await fetch("/api/calculate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             cache: "no-store",
@@ -108,9 +131,14 @@ async function runCollectors() {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('results').classList.remove('hidden');
 
-            // Display the JSON data in a readable format
-            document.getElementById('output').textContent = 
+            // Store raw JSON for copy-to-clipboard
+            document.getElementById('raw-output').textContent =
                 JSON.stringify(serverData, null, 2);
+
+            // Render collapsible tree
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            output.appendChild(renderJSON(serverData));
         } else {
             throw new Error('Server error: ' + response.status);
         }

@@ -1,0 +1,50 @@
+{
+  "known_brands": [
+    "AMD", "NVIDIA", "Intel", "Apple", "Qualcomm", "ARM", "Mali",
+    "Adreno", "PowerVR", "Imagination", "Samsung", "Broadcom",
+    "ASUS", "ATI", "Matrox", "S3", "VIA", "SiS", "XGI"
+  ],
+  "known_renderers": [
+    "ANGLE", "Mesa", "Direct3D", "Metal", "OpenGL", "Vulkan",
+    "NVIDIA GeForce", "AMD Radeon", "Intel HD Graphics", "Intel UHD Graphics",
+    "Intel Iris", "Intel Iris Plus", "Intel Iris Pro", "Intel Iris Xe",
+    "Apple M1", "Apple M2", "Apple M3", "Apple M4",
+    "Apple GPU", "Apple A14", "Apple A15", "Apple A16", "Apple A17",
+    "Mali-G", "Mali-T", "Adreno",
+    "GeForce GTX", "GeForce RTX", "Quadro",
+    "Radeon Pro", "Radeon RX", "Radeon Vega",
+    "Tegra"
+  ],
+  "suspicious_renderers": [
+    "SwiftShader",
+    "llvmpipe",
+    "softpipe",
+    "VirtualBox",
+    "VMware",
+    "Parallels",
+    "SVGA3D",
+    "Microsoft Basic Render Driver",
+    "Google SwiftShader",
+    "Software Rasterizer",
+    "GDI Generic"
+  ],
+  "virtual_machine_indicators": [
+    "VirtualBox", "VMware", "Parallels", "SVGA", "Hyper-V",
+    "QEMU", "Xen", "Bochs", "Virtual"
+  ],
+  "angle_patterns": {
+    "direct3d9": "ANGLE.*Direct3D9",
+    "direct3d11": "ANGLE.*Direct3D11",
+    "opengl": "ANGLE.*OpenGL",
+    "metal": "ANGLE.*Metal",
+    "vulkan": "ANGLE.*Vulkan"
+  },
+  "platform_gpu_map": {
+    "windows": ["NVIDIA", "AMD", "Intel", "ANGLE"],
+    "macos": ["Apple", "Intel", "AMD", "ANGLE"],
+    "linux": ["NVIDIA", "AMD", "Intel", "Mesa", "llvmpipe"],
+    "android": ["Adreno", "Mali", "PowerVR", "Apple", "Samsung"],
+    "ios": ["Apple"],
+    "chromeos": ["Intel", "AMD", "Mali", "Adreno"]
+  }
+}

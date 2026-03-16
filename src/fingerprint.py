@@ -1,48 +1,51 @@
 import hashlib
 import json
 
-from datetime import datetime
-
-
 # Feature set similarity threshold
-DICE_THRESHOLD = 0.6 
+DICE_THRESHOLD = 0.6
 
 # Maximum hamming distance (in bits) allowed for combined-hash fuzzy match
-HAMMING_BITS_THRESHOLD = 32 
+HAMMING_BITS_THRESHOLD = 32
 
 # Feature candidates
 FEATURES = [
-    'navigator', 
-    'navigatorPrototype', 
-    'windowPrototype', 
-    'chromium',
-    'math',
-    'errors',
-    'connection',
-    'uibars',
-    'screen',
-    'viewport',
-    'position',
-    'clientRects',
-    'storage',
-    'permissions',
-    'plugins',
-    'mimeTypes',
-    'codecs',
-    'fonts',
-    'webgl',
-    'webgpu',
-    'media',
-    'inputDevices',
-    'battery',
-    'deviceOrientation',
-    'sensors',
-    'audio',
-    'canvas',
-    'cssFeatures',
-    'tls',
-    'serverHints'
+    "navigator",
+    "prototypes",
+    "chromium",
+    "math",
+    "errors",
+    "connection",
+    "uibars",
+    "screen",
+    "clientRects",
+    "storage",
+    "permissions",
+    "plugins",
+    "codecs",
+    "fonts",
+    "webgl",
+    "webgpu",
+    "multimediaDevices",
+    "capabilities",
+    "inputDevices",
+    "battery",
+    "orientation",
+    "deviceOrientation",
+    "sensors",
+    "audio",
+    "canvas",
+    "cssFeatures",
+    "tls",
+    "lies",
+    "headless",
+    "intl",
+    "svg",
+    "windowKeys",
+    "worker",
+    "webrtc",
+    "resistance",
 ]
+
 
 def stable_stringify(obj):
     """Deterministic JSON serialization suitable for hashing."""
@@ -71,7 +74,7 @@ def hamming_distance(hex1: str, hex2: str) -> int:
     L = max(len(b1), len(b2))
     b1 = b1.zfill(L)
     b2 = b2.zfill(L)
-    return sum(c1 != c2 for c1, c2 in zip(b1, b2))
+    return sum(c1 != c2 for c1, c2 in zip(b1, b2, strict=False))
 
 
 def dice_coefficient(set_a: set, set_b: set) -> float:
@@ -89,21 +92,6 @@ def extract_features(data: dict) -> dict:
         if k in data:
             features[k] = data[k]
 
-    # ... existing normalization ...
-
-    # clientRects normalization
-    if "clientRects" in data and isinstance(data["clientRects"], dict):
-        features["clientRects.stable"] = normalize_client_rects(data["clientRects"])
-
-    return features
-
-def extract_features(data: dict) -> dict:
-    """Extract and normalize fingerprint features from raw JSON."""
-    features = {}
-    for k in FEATURES:
-        if k in data:
-            features[k] = data[k]
-
     # include canvas subfeatures that are high-entropy
     if "canvas" in data:
         for sub in ("textRendering", "subPixel", "composite", "shapes", "gradient", "lineStyles", "webgl"):
@@ -111,17 +99,20 @@ def extract_features(data: dict) -> dict:
                 features[f"canvas.{sub}"] = data["canvas"][sub]
 
     # audio.offline.summary
-    if "audio" in data and isinstance(data["audio"], dict):
-        if "offline" in data["audio"] and isinstance(data["audio"]["offline"], dict):
-            features["audio.offline.summary"] = data["audio"]["offline"].get("summary", data["audio"]["offline"])
+    if (
+        "audio" in data
+        and isinstance(data["audio"], dict)
+        and "offline" in data["audio"]
+        and isinstance(data["audio"]["offline"], dict)
+    ):
+        features["audio.offline.summary"] = data["audio"]["offline"].get("summary", data["audio"]["offline"])
 
-    # battery summary (avoid highly-volatile fields)
+    # battery summary — only keep supported flag, level/dischargingTime are too volatile
     if "battery" in data and isinstance(data["battery"], dict):
         battery = data["battery"]
         features["battery.summary"] = {
+            "supported": battery.get("supported", True),
             "charging": battery.get("charging"),
-            "level": battery.get("level"),
-            "dischargingTime": battery.get("dischargingTime"),
         }
 
     # navigator minimal
@@ -146,7 +137,6 @@ def extract_features(data: dict) -> dict:
             "pixelDepth": scr.get("pixelDepth"),
         }
 
-
     return features
 
 
@@ -164,16 +154,20 @@ def compute_combined_stable_hash(feature_hashes: dict) -> (str, list):
     Combine stable feature hashes into a single hash (visitor_id).
     Returns: (combined_stable_hash, visitor_id, stable_keys)
     """
-    stable_keys = [k for k in feature_hashes.keys() if (
-        k.startswith("canvas.")
-        or k
-        in (
-            "fonts",
-            "audio.offline.summary", 
-            "navigator.min",
-            "screen.min", 
+    stable_keys = [
+        k
+        for k in feature_hashes
+        if (
+            k.startswith("canvas.")
+            or k
+            in (
+                "fonts",
+                "audio.offline.summary",
+                "navigator.min",
+                "screen.min",
             )
-    )]
+        )
+    ]
 
     stable_concat = "|".join([f"{k}:{feature_hashes[k]}" for k in sorted(stable_keys)])
     combined_hash = sha256_hex(stable_concat)

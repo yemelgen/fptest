@@ -1,10 +1,9 @@
-from flask import Flask, send_from_directory
+from flask import Flask
 
 from endpoints import fingerprint_router
 
-
 app = Flask(__name__)
-app.register_blueprint(fingerprint_router, url_prefix='/fingerprint')
+app.register_blueprint(fingerprint_router, url_prefix="/api")
 
 
 if __name__ == "__main__":

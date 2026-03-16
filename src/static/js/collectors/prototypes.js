@@ -50,10 +50,17 @@ async function collectPrototypes() {
         return out;
     }
 
+    const htmlElementKeys = (() => {
+        const keys = [];
+        for (const key in document.documentElement) keys.push(key);
+        return keys;
+    })();
+
     return {
         prototypes: {
             windowProto: collect(window),
             navigatorProto: collect(navigator),
+            htmlElementKeys
         }
     };
 }

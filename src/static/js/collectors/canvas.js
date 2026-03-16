@@ -42,7 +42,13 @@ async function collectCanvas() {
             subPixel: testSubPixel(ctx),
 
             // 12. WebGL capabilities — queries vendor/renderer, supported extensions,
-            webgl: testWebGL()
+            webgl: testWebGL(),
+
+            // 13. Pixel noise detection — two-pass rendering to detect canvas randomization
+            pixelNoise: testPixelNoise(),
+
+            // 14. Emoji rendering dimensions — varies by OS/renderer
+            emojiMetrics: testEmojiMetrics()
         };
 
         return { canvas: tests };
@@ -188,7 +194,7 @@ function testShapes(ctx) {
 function testFontMetrics() {
     // Test which fonts are available and their metrics
     const testFonts = [
-        'Arial', 'Times New Roman', 'Courier New', 
+        'Arial', 'Times New Roman', 'Courier New',
         'Verdana', 'Georgia', 'Helvetica'
     ];
 
@@ -340,6 +346,103 @@ function testSubPixel(ctx) {
     return results;
 }
 
+
+function testPixelNoise() {
+    // Two-pass rendering: draw random pixels, copy pixel-by-pixel, compare RGBA channels
+    // Detects canvas randomization/noise injection by privacy tools
+    try {
+        const size = 8;
+        const canvas1 = document.createElement('canvas');
+        canvas1.width = size;
+        canvas1.height = size;
+        const ctx1 = canvas1.getContext('2d');
+
+        const canvas2 = document.createElement('canvas');
+        canvas2.width = size;
+        canvas2.height = size;
+        const ctx2 = canvas2.getContext('2d');
+
+        // Draw random pixels on canvas1 with a seeded pattern
+        const imgData1 = ctx1.createImageData(size, size);
+        let seed = 42;
+        for (let i = 0; i < imgData1.data.length; i += 4) {
+            seed = (seed * 16807 + 0) % 2147483647;
+            imgData1.data[i] = seed & 0xFF;
+            imgData1.data[i + 1] = (seed >> 8) & 0xFF;
+            imgData1.data[i + 2] = (seed >> 16) & 0xFF;
+            imgData1.data[i + 3] = 255;
+        }
+        ctx1.putImageData(imgData1, 0, 0);
+
+        // Read back from canvas1 and write pixel-by-pixel to canvas2
+        const readBack = ctx1.getImageData(0, 0, size, size);
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const idx = (y * size + x) * 4;
+                const r = readBack.data[idx];
+                const g = readBack.data[idx + 1];
+                const b = readBack.data[idx + 2];
+                const a = readBack.data[idx + 3];
+                ctx2.fillStyle = `rgba(${r},${g},${b},${a / 255})`;
+                ctx2.fillRect(x, y, 1, 1);
+            }
+        }
+
+        // Compare original vs copy
+        const original = ctx1.getImageData(0, 0, size, size).data;
+        const copy = ctx2.getImageData(0, 0, size, size).data;
+
+        const modifiedChannels = new Set();
+        let pixelCount = 0;
+
+        for (let i = 0; i < original.length; i += 4) {
+            let modified = false;
+            if (original[i] !== copy[i]) { modifiedChannels.add('r'); modified = true; }
+            if (original[i + 1] !== copy[i + 1]) { modifiedChannels.add('g'); modified = true; }
+            if (original[i + 2] !== copy[i + 2]) { modifiedChannels.add('b'); modified = true; }
+            if (original[i + 3] !== copy[i + 3]) { modifiedChannels.add('a'); modified = true; }
+            if (modified) pixelCount++;
+        }
+
+        return {
+            modifiedChannels: [...modifiedChannels].sort().join(',') || 'none',
+            modifiedPixels: pixelCount,
+            totalPixels: size * size,
+            noiseDetected: pixelCount > 0
+        };
+    } catch (e) {
+        return { error: e.message };
+    }
+}
+
+function testEmojiMetrics() {
+    // Emoji rendering dimensions vary by OS and renderer
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 50;
+        const ctx = canvas.getContext('2d');
+        ctx.font = '24px sans-serif';
+
+        const emojis = ['😀', '👾', '🔬', '🏳️‍🌈', '👨‍👩‍👧‍👦', '🇺🇸', '🧬', '💻'];
+        const metrics = {};
+
+        for (const emoji of emojis) {
+            const m = ctx.measureText(emoji);
+            metrics[emoji] = {
+                width: m.width,
+                actualBoundingBoxAscent: m.actualBoundingBoxAscent,
+                actualBoundingBoxDescent: m.actualBoundingBoxDescent,
+                actualBoundingBoxLeft: m.actualBoundingBoxLeft,
+                actualBoundingBoxRight: m.actualBoundingBoxRight
+            };
+        }
+
+        return metrics;
+    } catch (e) {
+        return { error: e.message };
+    }
+}
 
 function testWebGL() {
     try {

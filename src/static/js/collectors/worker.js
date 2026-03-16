@@ -139,6 +139,7 @@ async function collectWorker() {
         const blob = new Blob([workerCode], { type: "application/javascript" });
         const url = URL.createObjectURL(blob);
         const worker = new Worker(url);
+        URL.revokeObjectURL(url);
 
         return await new Promise(resolve => {
             const timeout = setTimeout(() => {

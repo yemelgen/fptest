@@ -23,7 +23,10 @@ async function collectMediaDevices() {
     }
 
     try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
+        const devices = await Promise.race([
+            navigator.mediaDevices.enumerateDevices(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+        ]);
 
         for (const d of devices) {
             const entry = {
@@ -49,11 +52,35 @@ async function collectMediaDevices() {
 }
 
 function testMediaQueries() {
+    function matchMediaFirst(queries) {
+        for (const q of queries) {
+            if (window.matchMedia(q).matches) {
+                return q.replace(/\(|\)/g, '').split(': ').pop();
+            }
+        }
+        return "none";
+    }
+
     return {
         prefersDarkMode: window.matchMedia("(prefers-color-scheme: dark)").matches,
         reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
         hover: window.matchMedia("(hover: hover)").matches,
         pointerCoarse: window.matchMedia("(pointer: coarse)").matches,
-        highContrast: window.matchMedia("(forced-colors: active)").matches
+        highContrast: window.matchMedia("(forced-colors: active)").matches,
+        anyHover: window.matchMedia("(any-hover: hover)").matches,
+        anyPointer: matchMediaFirst([
+            "(any-pointer: fine)", "(any-pointer: coarse)", "(any-pointer: none)"
+        ]),
+        colorGamut: matchMediaFirst([
+            "(color-gamut: rec2020)", "(color-gamut: p3)", "(color-gamut: srgb)"
+        ]),
+        displayMode: matchMediaFirst([
+            "(display-mode: fullscreen)", "(display-mode: standalone)",
+            "(display-mode: minimal-ui)", "(display-mode: browser)"
+        ]),
+        invertedColors: window.matchMedia("(inverted-colors: inverted)").matches,
+        monochrome: window.matchMedia("(monochrome)").matches,
+        orientation: window.matchMedia("(orientation: landscape)").matches ? "landscape" : "portrait",
+        deviceAspectRatio: `${screen.width}/${screen.height}`
     };
 }

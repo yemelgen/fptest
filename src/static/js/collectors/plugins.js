@@ -1,6 +1,6 @@
 async function collectPlugins() {
     const results = {
-        pluginsData: {
+        plugins: {
             plugins: [],
             mimeTypes: []
         }
@@ -19,7 +19,7 @@ async function collectPlugins() {
                 mimeTypes: []
             };
 
-            results.pluginsData.plugins.push(pluginEntry);
+            results.plugins.plugins.push(pluginEntry);
             pluginMap[p.name] = pluginEntry;
         }
 
@@ -33,7 +33,7 @@ async function collectPlugins() {
                 enabledPlugin: mt.enabledPlugin?.name ?? null
             };
 
-            results.pluginsData.mimeTypes.push(
+            results.plugins.mimeTypes.push(
                 `${mimeRecord.description}~~${mimeRecord.type}~~${mimeRecord.suffixes}`
             );
 
@@ -44,7 +44,7 @@ async function collectPlugins() {
         }
 
     } catch (error) {
-        results.pluginsData.error = error.toString();
+        results.plugins.error = error.toString();
     }
 
     return results;

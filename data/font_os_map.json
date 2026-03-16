@@ -1,0 +1,43 @@
+{
+  "windows": {
+    "7": ["Cambria Math", "Lucida Console", "Segoe UI"],
+    "8": ["Aldhabi", "Gadugi", "Myanmar Text", "Nirmala UI"],
+    "8.1": ["Leelawadee UI", "Javanese Text", "Segoe UI Emoji"],
+    "10": ["HoloLens MDL2 Assets", "Segoe MDL2 Assets", "Bahnschrift", "Ink Free"],
+    "11": ["Segoe Fluent Icons"],
+    "common": ["Arial", "Calibri", "Cambria", "Comic Sans MS", "Consolas", "Courier New",
+               "Georgia", "Impact", "Lucida Console", "Microsoft Sans Serif",
+               "Palatino Linotype", "Segoe UI", "Tahoma", "Times New Roman",
+               "Trebuchet MS", "Verdana", "Wingdings"]
+  },
+  "macos": {
+    "10.9": ["Helvetica Neue", "Geneva"],
+    "10.10": ["Kohinoor Devanagari", "Luminari"],
+    "10.11": ["PingFang HK"],
+    "10.12": ["American Typewriter", "Futura", "SignPainter"],
+    "10.13": ["InaiMathi Bold"],
+    "10.15": ["Galvji", "MuktaMahee Regular"],
+    "12": ["Noto Sans Gunjala Gondi"],
+    "13": ["Apple SD Gothic Neo", "STIX Two Math", "STIX Two Text"],
+    "common": ["Arial", "Courier New", "Geneva", "Helvetica", "Helvetica Neue",
+               "Lucida Grande", "Menlo", "Monaco", "Optima", "Palatino",
+               "San Francisco", "SF Pro", "Times New Roman", "Verdana"]
+  },
+  "linux": {
+    "common": ["Arimo", "Chilanka", "Cousine", "Jomolhari", "Noto Color Emoji",
+               "Ubuntu", "Ubuntu Mono", "Dancing Script", "Droid Sans Mono",
+               "Liberation Mono", "Liberation Sans", "Liberation Serif",
+               "DejaVu Sans", "DejaVu Serif", "DejaVu Sans Mono",
+               "Cantarell", "Source Code Pro"]
+  },
+  "android": {
+    "common": ["Dancing Script", "Droid Sans Mono", "Roboto", "Noto Sans",
+               "Noto Color Emoji", "Cutive Mono"]
+  },
+  "desktop_apps": {
+    "microsoft_outlook": ["MS Outlook"],
+    "adobe_acrobat": ["ZWAdobeF"],
+    "libreoffice": ["Amiri", "KACSTOffice", "Liberation Mono", "Source Code Pro"],
+    "openoffice": ["DejaVu Sans", "Gentium Book Basic", "OpenSymbol"]
+  }
+}

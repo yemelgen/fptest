@@ -10,7 +10,7 @@ async function collectWebGPU() {
         const device = await adapter.requestDevice();
 
         // Basic adapter info (some browsers expose more than others)
-        const adapterInfo = adapter.requestAdapterInfo 
+        const adapterInfo = adapter.requestAdapterInfo
             ? await adapter.requestAdapterInfo().catch(() => ({}))
             : {};
 
@@ -34,13 +34,13 @@ async function collectWebGPU() {
             : null;
 
         // Test buffer capabilities
-        bufferCapabilities = testBufferCapabilities(device);
-        
+        const bufferCapabilities = testBufferCapabilities(device);
+
         // Shader capabilities
-        shaderCapabilities = await testShaderCapabilities(device);
-        
+        const shaderCapabilities = await testShaderCapabilities(device);
+
         // Compute capabilities
-        computeCapabilities = testComputeCapabilities(device);
+        const computeCapabilities = testComputeCapabilities(device);
 
         return {
             webgpu: {
@@ -64,7 +64,7 @@ async function collectWebGPU() {
 
 function testBufferCapabilities(device) {
     const capabilities = {};
-    
+
     try {
         // Test different buffer usages
         const usageTests = [
@@ -100,7 +100,7 @@ function testBufferCapabilities(device) {
     } catch (e) {
         capabilities.error = e.toString();
     }
-    
+
     return capabilities;
 }
 
@@ -114,7 +114,7 @@ async function testBufferMappingSupport(device) {
         await buffer.mapAsync(GPUMapMode.READ);
         buffer.unmap();
         buffer.destroy();
-        
+
         return { supported: true };
     } catch (e) {
         return { supported: false, error: e.toString() };
@@ -135,7 +135,7 @@ async function testShaderCapabilities(device) {
                 return vec4f(0.0, 0.0, 0.0, 1.0);
             }
         `;
-        
+
         const basicShader = device.createShaderModule({ code: basicShaderCode });
         capabilities.basicShader = true;
 
@@ -144,14 +144,14 @@ async function testShaderCapabilities(device) {
             struct Uniforms {
                 transform: mat4x4f,
             };
-            
+
             @binding(0) @group(0) var<uniform> uniforms: Uniforms;
-            
+
             struct VertexOutput {
                 @builtin(position) position: vec4f,
                 @location(0) color: vec4f,
             };
-            
+
             @vertex fn vs(
                 @location(0) position: vec4f,
                 @location(1) color: vec4f
@@ -161,7 +161,7 @@ async function testShaderCapabilities(device) {
                 output.color = color;
                 return output;
             }
-            
+
             @fragment fn fs(input: VertexOutput) -> @location(0) vec4f {
                 return input.color;
             }
@@ -173,7 +173,7 @@ async function testShaderCapabilities(device) {
     } catch (e) {
         capabilities.error = e.toString();
     }
-    
+
     return capabilities;
 }
 
@@ -212,7 +212,7 @@ function testComputeCapabilities(device) {
         const workgroupShader = device.createShaderModule({
             code: `
                 var<workgroup> sharedData: array<f32, 64>;
-                
+
                 @compute @workgroup_size(64)
                 fn main(@builtin(local_invocation_id) local_id: vec3u) {
                     sharedData[local_id.x] = f32(local_id.x);
@@ -229,6 +229,6 @@ function testComputeCapabilities(device) {
     } catch (e) {
         capabilities.error = e.toString();
     }
-    
+
     return capabilities;
 }

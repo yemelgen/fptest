@@ -1,0 +1,58 @@
+{
+  "_description": "Known audio fingerprint patterns per browser engine. Values are OfflineAudioContext summary hashes and statistics from known-good browsers.",
+  "engines": {
+    "v8": {
+      "description": "Chrome/Chromium/Edge/Opera (Blink + V8)",
+      "sample_rate": 44100,
+      "expected_nonzero": true,
+      "expected_unique_ratio_range": [0.3, 0.99],
+      "notes": "V8 browsers produce consistent non-zero audio output"
+    },
+    "spidermonkey": {
+      "description": "Firefox (Gecko + SpiderMonkey)",
+      "sample_rate": 44100,
+      "expected_nonzero": true,
+      "expected_unique_ratio_range": [0.3, 0.99],
+      "notes": "SpiderMonkey audio output differs from V8 in variance and hash"
+    },
+    "jsc": {
+      "description": "Safari (WebKit + JavaScriptCore)",
+      "sample_rate": 44100,
+      "expected_nonzero": true,
+      "expected_unique_ratio_range": [0.3, 0.99],
+      "notes": "JSC may have different precision in audio processing"
+    }
+  },
+  "suspicious_patterns": {
+    "all_zeros": {
+      "description": "All audio samples are zero — audio API is blocked or fake",
+      "severity": "high"
+    },
+    "all_unique": {
+      "description": "Every sample is unique — noise injection detected",
+      "severity": "high"
+    },
+    "sample_mismatch": {
+      "description": "getChannelData() and copyFromChannel() return different values",
+      "severity": "high"
+    },
+    "very_low_variance": {
+      "description": "Variance < 1e-20 — samples may be clamped or fake",
+      "severity": "medium"
+    },
+    "very_high_variance": {
+      "description": "Variance > 0.1 — unusual audio output suggests manipulation",
+      "severity": "medium"
+    },
+    "zero_hash": {
+      "description": "Hash is 0 — all samples likely identical",
+      "severity": "medium"
+    }
+  },
+  "thresholds": {
+    "min_expected_variance": 1e-20,
+    "max_expected_variance": 0.1,
+    "max_unique_ratio": 0.999,
+    "min_unique_ratio": 0.01
+  }
+}

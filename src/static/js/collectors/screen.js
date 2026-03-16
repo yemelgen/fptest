@@ -4,8 +4,8 @@ async function collectScreen() {
     // HDR detection (Chrome/Edge only)
     async function detectHDR() {
         try {
-            if (!('query' in window.matchMedia)) return false,
-            mq = await window.matchMedia("(dynamic-range: high)");
+            if (!('query' in window.matchMedia)) return false;
+            const mq = await window.matchMedia("(dynamic-range: high)");
             return mq.matches;
         } catch {
             return false;

@@ -10,8 +10,8 @@
     <meta property="og:title" content="Browser Fingerprint Tester">
     <meta property="og:description" content="See what data websites can collect from your browser in JSON format.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://dev.yemel.com/fptest">
-    <meta property="og:image" content="https://dev.yemel.com/fptest/favicon.png">
+    <meta property="og:url" content="https://fptest.yemel.org">
+    <meta property="og:image" content="https://fptest.yemel.org/favicon.png">
     <link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
     <link href="/css/styles.css" rel="stylesheet" type="text/css" />
     <title>Hello!</title>
@@ -39,12 +39,16 @@
             <div class="menubar">
                 <div class="menu-text"></div>
                 <div class="menu-buttons">
+                    <button class="button" onclick="downloadJSON()">
+                        <span class="download-icon"></span>
+                    </button>
                     <button class="button" onclick="copyToClipboard()">
                         <span class="copy-icon"></span>
                     </button>
                 </div>
             </div>
             <div id="output"></div>
+            <pre id="raw-output" class="hidden"></pre>
         </div>
         <div id="error" class="hidden" style="color: red;"></div>
         <div id="tests" class="test-elements">
@@ -99,6 +103,14 @@
     <script src="/js/collectors/css.js"></script>
     <script src="/js/collectors/tls.js"></script>
     <script src="/js/collectors/worker.js"></script>
+
+    <script src="/js/collectors/lies.js"></script>
+    <script src="/js/collectors/headless.js"></script>
+    <script src="/js/collectors/intl.js"></script>
+    <script src="/js/collectors/svg.js"></script>
+    <script src="/js/collectors/windowkeys.js"></script>
+    <script src="/js/collectors/webrtc.js"></script>
+    <script src="/js/collectors/resistance.js"></script>
 
     <script src="/js/main.js"></script>
     <script src="/js/utils.js"></script>
