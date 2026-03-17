@@ -119,7 +119,7 @@ def extract_features(data: dict) -> dict:
     if "navigator" in data and isinstance(data["navigator"], dict):
         nav = data["navigator"]
         nav_pick = {}
-        for key in ("userAgent", "platform", "hardwareConcurrency", "language"):
+        for key in ("userAgent", "platform", "language"):
             if key in nav:
                 nav_pick[key] = nav[key]
         if "userAgentData" in nav:
@@ -131,8 +131,6 @@ def extract_features(data: dict) -> dict:
     if "screen" in data and isinstance(data["screen"], dict):
         scr = data["screen"]
         features["screen.min"] = {
-            "width": scr.get("width"),
-            "height": scr.get("height"),
             "colorDepth": scr.get("colorDepth"),
             "pixelDepth": scr.get("pixelDepth"),
         }
@@ -157,15 +155,14 @@ def compute_combined_stable_hash(feature_hashes: dict) -> (str, list):
     stable_keys = [
         k
         for k in feature_hashes
-        if (
-            k.startswith("canvas.")
-            or k
-            in (
-                "fonts",
-                "audio.offline.summary",
-                "navigator.min",
-                "screen.min",
-            )
+        if k
+        in (
+            "fonts",
+            "canvas.shapes",
+            "canvas.gradient",
+            "canvas.webgl",
+            "navigator.min",
+            "screen.min",
         )
     ]
 
