@@ -479,22 +479,55 @@ def check_css_consistency(data):
     nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
     ua = (nav.get("userAgent", "") or "").lower()
 
-    # backdrop-filter: supported in Chrome 76+, Safari 9+, Firefox 103+
+    # Features expected in all modern browsers
+    universal_features = ["display: grid", "display: flex", "position: sticky", "gap: 1px"]
+    for feat in universal_features:
+        if css.get(feat) is False:
+            issues.append(f"'{feat}' not supported (expected in all modern browsers)")
+
     chrome_match = re.search(r"chrome/(\d+)", ua)
+    firefox_match = re.search(r"firefox/(\d+)", ua)
+    safari_match = re.search(r"version/(\d+).*safari", ua)
+
+    # Chrome version-gated features
     if chrome_match:
         chrome_ver = int(chrome_match.group(1))
-        if chrome_ver >= 76 and css.get("backdrop-filter") is False:
-            issues.append(f"Chrome {chrome_ver} should support backdrop-filter")
+        chrome_features = [
+            (76, "backdrop-filter"),
+            (93, "accent-color: red"),
+            (105, "container-type: inline-size"),
+            (111, "color: lab(50% 40 30)"),
+            (117, "grid-template-columns: subgrid"),
+            (120, "selector(&)"),
+        ]
+        for min_ver, feat in chrome_features:
+            if chrome_ver >= min_ver and css.get(feat) is False:
+                issues.append(f"Chrome {chrome_ver} should support '{feat}' (added in {min_ver})")
 
-    # CSS Grid: supported in all modern browsers since 2017
-    if css.get("display: grid") is False:
-        issues.append("CSS Grid not supported (expected in all modern browsers)")
+    # Firefox version-gated features
+    if firefox_match:
+        ff_ver = int(firefox_match.group(1))
+        ff_features = [
+            (103, "backdrop-filter"),
+            (113, "color: lab(50% 40 30)"),
+            (117, "selector(&)"),
+            (121, "container-type: inline-size"),
+        ]
+        for min_ver, feat in ff_features:
+            if ff_ver >= min_ver and css.get(feat) is False:
+                issues.append(f"Firefox {ff_ver} should support '{feat}' (added in {min_ver})")
 
-    # color(lab): Chrome 111+, Safari 15+, Firefox 113+
-    if chrome_match:
-        chrome_ver = int(chrome_match.group(1))
-        if chrome_ver >= 111 and css.get("color: lab(50% 40 30)") is False:
-            issues.append(f"Chrome {chrome_ver} should support CSS lab() colors")
+    # Safari version-gated features
+    if safari_match:
+        safari_ver = int(safari_match.group(1))
+        safari_features = [
+            (15, "aspect-ratio: 1"),
+            (16, "container-type: inline-size"),
+            (16, "grid-template-columns: subgrid"),
+        ]
+        for min_ver, feat in safari_features:
+            if safari_ver >= min_ver and css.get(feat) is False:
+                issues.append(f"Safari {safari_ver} should support '{feat}' (added in {min_ver})")
 
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 

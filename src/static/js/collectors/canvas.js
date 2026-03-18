@@ -4,6 +4,7 @@ async function collectCanvas() {
         canvas.width = 400;
         canvas.height = 200;
         const ctx = canvas.getContext("2d");
+        if (!ctx) return { canvas: { supported: false } };
 
         // Test different rendering operations and collect their results
         const tests = {
@@ -192,34 +193,41 @@ function testShapes(ctx) {
 }
 
 function testFontMetrics() {
-    // Test which fonts are available and their metrics
+    // Test which fonts are available by comparing rendered width against a fallback.
+    // If a font is not installed, it falls back to the baseline font and widths match.
     const testFonts = [
         'Arial', 'Times New Roman', 'Courier New',
         'Verdana', 'Georgia', 'Helvetica'
     ];
 
     const results = {};
-    const span = document.createElement('span');
-    span.style.position = 'absolute';
-    span.style.left = '-9999px';
-    span.style.fontSize = '20px';
-    span.innerHTML = 'TestString';
+    const baseline = document.createElement('span');
+    baseline.style.position = 'absolute';
+    baseline.style.left = '-9999px';
+    baseline.style.fontSize = '20px';
+    baseline.innerHTML = 'mmmmmmmmmmlli';
 
-    document.body.appendChild(span);
+    const test = baseline.cloneNode(true);
+    document.body.appendChild(baseline);
+    document.body.appendChild(test);
+
+    // Measure baseline with a fallback font unlikely to match test fonts
+    baseline.style.fontFamily = 'monospace';
+    const baselineWidth = baseline.offsetWidth;
 
     testFonts.forEach(font => {
-        span.style.fontFamily = font;
-        // Force reflow
-        void span.offsetWidth;
+        test.style.fontFamily = `'${font}', monospace`;
+        void test.offsetWidth;
 
         results[font] = {
-            available: span.style.fontFamily.includes(font),
-            width: span.offsetWidth,
-            height: span.offsetHeight
+            available: test.offsetWidth !== baselineWidth,
+            width: test.offsetWidth,
+            height: test.offsetHeight
         };
     });
 
-    document.body.removeChild(span);
+    document.body.removeChild(baseline);
+    document.body.removeChild(test);
     return results;
 }
 
@@ -228,8 +236,10 @@ function samplePixels(imageData, coordinates) {
     const samples = [];
     const data = imageData.data;
     const width = imageData.width;
+    const height = imageData.height;
 
     coordinates.forEach(([x, y]) => {
+        if (x < 0 || x >= width || y < 0 || y >= height) return;
         const index = (y * width + x) * 4;
         samples.push({
             x, y,

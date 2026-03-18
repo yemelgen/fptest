@@ -13,6 +13,13 @@ async function collectInputDevices() {
         hasWheelEvents: "onwheel" in window,
         hasGamepadEvents: "ongamepadconnected" in window,
 
+        // Media query pointer/hover detection — reflects actual device capabilities
+        // and harder to spoof than JS API presence checks
+        pointer: matchMediaValue("(pointer: fine)", "(pointer: coarse)", "(pointer: none)"),
+        anyPointer: matchMediaValue("(any-pointer: fine)", "(any-pointer: coarse)", "(any-pointer: none)"),
+        hover: matchMediaValue("(hover: hover)", "(hover: none)"),
+        anyHover: matchMediaValue("(any-hover: hover)", "(any-hover: none)"),
+
         // InputDeviceCapabilities API (experimental)
         pointerCapabilities: {}
     };
@@ -42,5 +49,33 @@ async function collectInputDevices() {
         input.gamepads = { error: e.message };
     }
 
+    // Keyboard layout (if available)
+    try {
+        if (navigator.keyboard && navigator.keyboard.getLayoutMap) {
+            const layout = await navigator.keyboard.getLayoutMap();
+            input.keyboardLayout = {
+                size: layout.size,
+                sample: Object.fromEntries([...layout.entries()].slice(0, 10))
+            };
+        }
+    } catch (e) {
+        // getLayoutMap may be blocked by permissions policy
+    }
+
     return { inputDevices: input };
+}
+
+function matchMediaValue(...queries) {
+    for (const q of queries) {
+        try {
+            if (window.matchMedia(q).matches) {
+                // Extract the value from e.g. "(pointer: fine)" -> "fine"
+                const match = q.match(/:\s*([^)]+)/);
+                return match ? match[1].trim() : true;
+            }
+        } catch (e) {
+            // matchMedia not available
+        }
+    }
+    return null;
 }
