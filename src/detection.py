@@ -1,4 +1,5 @@
 import re
+from collections import Counter
 
 import datasets
 
@@ -20,8 +21,6 @@ def detect_engine(data):
     results["errors"] = datasets.match_engine_by_errors(errors_data)
 
     # Method 3: Window keys / engine globals
-    # Check JSC/Safari first — safari and ApplePaySession are unique identifiers.
-    # chrome object can exist in Safari WebView contexts, so V8 check must come after.
     window_keys = data.get("windowKeys", {})
     engine_globals = window_keys.get("engineGlobals", {})
     prefixed = window_keys.get("prefixed", {})
@@ -47,15 +46,13 @@ def detect_engine(data):
         if r_engine in engine_map:
             results["resistance"] = engine_map[r_engine]
 
-    # Consensus — with weighted tie-breaking.
+    # Consensus with weighted tie-breaking.
     # globals and resistance are harder to spoof than math/errors precision,
     # so they get priority when there's a tie.
     votes = [v for v in results.values() if v != "unknown"]
     if not votes:
         engine = "unknown"
     else:
-        from collections import Counter
-
         counter = Counter(votes)
         top_count = counter.most_common(1)[0][1]
         tied = [e for e, c in counter.items() if c == top_count]
@@ -109,6 +106,8 @@ def detect_platform(data):
         platform_os = "windows"
     elif re.search(r"Mac", platform):
         platform_os = "macos"
+    elif re.search(r"iPhone|iPad|iPod", platform, re.I):
+        platform_os = "ios"
     elif re.search(r"Linux", platform) and not re.search(r"Android", ua, re.I):
         platform_os = "linux"
     elif re.search(r"Linux", platform) and re.search(r"Android", ua, re.I):
@@ -205,19 +204,21 @@ def detect_bot_signals(data):
         signals.append({"signal": "no_plugins", "severity": "medium", "detail": "No browser plugins detected"})
 
     if headless_signals.get("noTaskbar"):
-        # On Linux, many desktop environments (GNOME with auto-hide, tiling WMs)
-        # legitimately have availHeight == height, so reduce severity
+        # Mobile devices and Linux DEs (GNOME auto-hide, tiling WMs) legitimately
+        # have availHeight == height, so reduce or skip the signal
         nav = data.get("navigator", {})
         platform_str = (nav.get("platform", "") or "").lower()
         ua_str = (nav.get("userAgent", "") or "").lower()
+        is_mobile = bool(re.search(r"iphone|ipad|ipod|android", ua_str))
         is_linux = "linux" in platform_str or "linux" in ua_str
-        signals.append(
-            {
-                "signal": "no_taskbar",
-                "severity": "low" if is_linux else "medium",
-                "detail": "Screen height equals available height (no taskbar)",
-            }
-        )
+        if not is_mobile:
+            signals.append(
+                {
+                    "signal": "no_taskbar",
+                    "severity": "low" if is_linux else "medium",
+                    "detail": "Screen height equals available height (no taskbar)",
+                }
+            )
 
     # iframeProxy: chrome in iframe srcdoc is normal for real Chrome.
     # Only flag when main window has no chrome (stealth plugin added it to iframe only)
@@ -262,10 +263,6 @@ def detect_bot_signals(data):
                 "detail": "Chrome 94+ missing navigator.share/canShare (headless)",
             }
         )
-
-    # Note: noContentIndex, noContactsManager, noDownlinkMax are collected in JS
-    # but NOT penalized here — they are Android/ChromeOS-only APIs, so they are
-    # missing on ALL desktop Chromium browsers (not just headless).
 
     # Lie detection signals
     lies = data.get("lies", {})
@@ -321,7 +318,6 @@ def detect_bot_signals(data):
         if isinstance(client_litter, dict) and not client_litter.get("error"):
             injected = client_litter.get("injectedKeys", [])
             litter_count = client_litter.get("count", 0)
-            # Known automation framework globals
             automation_prefixes = (
                 "cdc_",
                 "__webdriver",
@@ -402,21 +398,25 @@ def detect_bot_signals(data):
     if isinstance(connection, dict) and connection.get("supported") and connection.get("rtt") == 0:
         signals.append({"signal": "zero_rtt", "severity": "medium", "detail": "Network RTT is exactly 0ms"})
 
-    # Filter out false positives for privacy browsers
     resistance = data.get("resistance", {})
-    if isinstance(resistance, dict):
-        privacy_browser = resistance.get("privacy")
-        if privacy_browser in ("Brave", "Tor Browser", "Firefox"):
-            # These signals are expected side effects of privacy features
-            privacy_expected = {
-                "no_plugins",
-                "canvas_noise",
-                "no_webrtc",
-                "iframe_proxy",  # Brave blocks chrome in iframe srcdoc
-                "audio_sample_mismatch",  # Brave may randomize audio
-                "no_web_share",  # Brave strips Web Share API
-            }
-            signals = [s for s in signals if s["signal"] not in privacy_expected]
+    privacy_browser = resistance.get("privacy") if isinstance(resistance, dict) else None
+    nav = data.get("navigator", {})
+    ua_lower = (nav.get("userAgent", "") or "").lower()
+
+    if not privacy_browser and "brave" in ua_lower:
+        privacy_browser = "Brave"
+    if privacy_browser in ("Brave", "Tor Browser", "Firefox"):
+        privacy_expected = {
+            "no_plugins",
+            "canvas_noise",
+            "no_webrtc",
+            "iframe_proxy",  # Brave blocks chrome in iframe srcdoc
+            "audio_sample_mismatch",  # Brave may randomize audio
+            "audio_all_unique",  # Brave audio randomization can cause all-unique samples
+            "no_web_share",  # Brave strips Web Share API
+            "api_lies",  # Brave patches audio APIs (getChannelData, etc.)
+        }
+        signals = [s for s in signals if s["signal"] not in privacy_expected]
 
     return signals
 
