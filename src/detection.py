@@ -264,6 +264,42 @@ def detect_bot_signals(data):
             }
         )
 
+    if headless_signals.get("pdfDisabled"):
+        signals.append(
+            {
+                "signal": "pdf_viewer_disabled",
+                "severity": "medium",
+                "detail": "navigator.pdfViewerEnabled is false (headless indicator)",
+            }
+        )
+
+    if headless_signals.get("blankUADataPlatform"):
+        signals.append(
+            {
+                "signal": "blank_uadata_platform",
+                "severity": "high",
+                "detail": "userAgentData.platform is empty string (headless indicator)",
+            }
+        )
+
+    if headless_signals.get("noContentIndex"):
+        signals.append(
+            {
+                "signal": "no_content_index",
+                "severity": "medium",
+                "detail": "Chrome 84+ missing ContentIndex API (headless indicator)",
+            }
+        )
+
+    if headless_signals.get("noContactsManager"):
+        signals.append(
+            {
+                "signal": "no_contacts_manager",
+                "severity": "medium",
+                "detail": "Chrome 80+ missing ContactsManager API (headless indicator)",
+            }
+        )
+
     # Lie detection signals
     lies = data.get("lies", {})
     lie_count = lies.get("totalCount", 0)
@@ -320,12 +356,16 @@ def detect_bot_signals(data):
             litter_count = client_litter.get("count", 0)
             automation_prefixes = (
                 "cdc_",
+                "$cdc_",
+                "$wdc_",
                 "__webdriver",
                 "__selenium",
                 "__driver",
                 "__fxdriver",
                 "_Selenium",
                 "__nightmare",
+                "__playwright",
+                "__pw_",
             )
             automation_exact = {
                 "callSelenium",
@@ -334,6 +374,8 @@ def detect_bot_signals(data):
                 "domAutomation",
                 "domAutomationController",
                 "_selenium",
+                "__playwright",
+                "playwright",
             }
             found_automation = [
                 k for k in injected if k in automation_exact or any(k.startswith(p) for p in automation_prefixes)
@@ -415,6 +457,9 @@ def detect_bot_signals(data):
             "audio_all_unique",  # Brave audio randomization can cause all-unique samples
             "no_web_share",  # Brave strips Web Share API
             "api_lies",  # Brave patches audio APIs (getChannelData, etc.)
+            "no_content_index",  # Brave/Tor may strip ContentIndex
+            "no_contacts_manager",  # Brave/Tor may strip ContactsManager
+            "pdf_viewer_disabled",  # Tor disables PDF viewer
         }
         signals = [s for s in signals if s["signal"] not in privacy_expected]
 

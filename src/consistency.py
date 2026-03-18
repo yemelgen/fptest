@@ -50,6 +50,42 @@ def check_platform_consistency(data):
         ):
             issues.append("userAgentData.platform inconsistent with navigator.platform")
 
+    # Navigator trusted value validation
+    dnt = nav.get("doNotTrack")
+    if dnt is not None:
+        trusted_dnt = {"1", "true", "yes", "0", "false", "no", "unspecified", "null", "undefined"}
+        if str(dnt) not in trusted_dnt:
+            issues.append(f"non-standard doNotTrack value: {dnt}")
+
+    gpc = (
+        nav.get("extraProperties", {}).get("globalPrivacyControl")
+        if isinstance(nav.get("extraProperties"), dict)
+        else None
+    )
+    if gpc is not None:
+        trusted_gpc = {"1", "true", "yes", "0", "false", "no", "unspecified", "null", "undefined"}
+        if str(gpc) not in trusted_gpc:
+            issues.append(f"non-standard globalPrivacyControl value: {gpc}")
+
+    if platform:
+        trusted_platforms = (
+            "win",
+            "linux",
+            "mac",
+            "arm",
+            "pike",
+            "iphone",
+            "ipad",
+            "ipod",
+            "android",
+            "x11",
+            "cros",
+            "freebsd",
+        )
+        platform_lower = platform.lower()
+        if not any(tp in platform_lower for tp in trusted_platforms):
+            issues.append(f"unrecognized navigator.platform: {platform}")
+
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
@@ -244,6 +280,10 @@ def check_screen_consistency(data):
         common_dprs = [1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5]
         if dpr not in common_dprs and dpr > 0:
             issues.append(f"unusual devicePixelRatio: {dpr}")
+
+    # 800x600 is the default headless Chrome resolution
+    if width == 800 and height == 600:
+        issues.append("screen resolution 800x600 (common headless default)")
 
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
