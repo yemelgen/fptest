@@ -57,25 +57,29 @@
       "test": "acos_0.5",
       "v8_value": 1.0471975511965979,
       "spidermonkey_value": 1.0471975511965976,
-      "note": "Last digit differs between V8 and SpiderMonkey"
+      "spidermonkey_alt_value": 1.0471975511965979,
+      "note": "Last digit differs on older SpiderMonkey; modern SM matches V8"
     },
     {
       "test": "asin_0.5",
       "v8_value": 0.5235987755982989,
       "spidermonkey_value": 0.5235987755982988,
-      "note": "Last digit differs between V8 and SpiderMonkey"
+      "spidermonkey_alt_value": 0.5235987755982989,
+      "note": "Last digit differs on older SpiderMonkey; modern SM matches V8"
     },
     {
       "test": "atanh_0.5",
       "v8_value": 0.5493061443340548,
       "spidermonkey_value": 0.5493061443340549,
-      "note": "Last digit differs between V8 and SpiderMonkey"
+      "spidermonkey_alt_value": 0.5493061443340548,
+      "note": "Last digit differs on older SpiderMonkey; modern SM matches V8"
     },
     {
       "test": "expm1_1",
       "v8_value": 1.718281828459045,
       "spidermonkey_value": 1.7182818284590453,
-      "note": "Extra digit in SpiderMonkey"
+      "spidermonkey_alt_value": 1.718281828459045,
+      "note": "Extra digit in older SpiderMonkey; modern SM matches V8"
     }
   ],
   "error_messages": {
@@ -89,10 +93,12 @@
     },
     "spidermonkey": {
       "null_property": "null has no properties",
+      "null_property_alt": "can't access property",
       "undefined_var": "is not defined",
       "invalid_radix": "radix must be an integer at least 2 and no greater than 36",
       "not_iterable": "is not iterable",
-      "invalid_array_length": "invalid array length"
+      "invalid_array_length": "invalid array length",
+      "syntax_error": "expected expression, got"
     },
     "jsc": {
       "null_property": "null is not an object",

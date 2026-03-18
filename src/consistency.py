@@ -391,10 +391,13 @@ def check_codec_consistency(data):
             issues.append("Chrome UA but Opus not supported")
 
     # Firefox: should support VP8, VP9, Opus, Theora
+    # Note: Theora depends on system codecs on Linux; modern distros often don't ship it
     if "firefox" in ua:
+        platform_str = (nav.get("platform", "") or "").lower()
+        is_linux = "linux" in platform_str or "linux" in ua
         if not video.get("vp8"):
             issues.append("Firefox UA but VP8 not supported")
-        if not video.get("theora"):
+        if not video.get("theora") and not is_linux:
             issues.append("Firefox UA but Theora not supported")
         if not audio.get("opus"):
             issues.append("Firefox UA but Opus not supported")

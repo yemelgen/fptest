@@ -180,7 +180,7 @@ def match_engine_by_math(math_data):
 
         if collected == disc.get("v8_value"):
             v8_score += 1
-        if collected == disc.get("spidermonkey_value"):
+        if collected == disc.get("spidermonkey_value") or collected == disc.get("spidermonkey_alt_value"):
             sm_score += 1
         # JSC shares values with V8 for most tests
         jsc_val = disc.get("jsc_value", disc.get("v8_value"))
@@ -229,6 +229,10 @@ def match_engine_by_errors(errors_data):
     best = max(scores, key=scores.get)
     if scores[best] == 0:
         return "unknown"
+    # If there's a tie between engines, return unknown rather than arbitrary winner
+    tied = [e for e, s in scores.items() if s == scores[best]]
+    if len(tied) > 1:
+        return "unknown"
     return best
 
 
@@ -252,7 +256,9 @@ def match_audio_pattern(audio_data):
     if suspicious_flags.get("sampleMismatch"):
         flags.append({"flag": "sample_mismatch", "severity": "high"})
     if suspicious_flags.get("tooManyUnique"):
-        flags.append({"flag": "all_unique", "severity": "high"})
+        # Firefox legitimately produces all-unique audio samples due to
+        # full-precision floats in OfflineAudioContext. Only flag as medium.
+        flags.append({"flag": "all_unique", "severity": "medium"})
     if suspicious_flags.get("allZeros"):
         flags.append({"flag": "all_zeros", "severity": "high"})
 

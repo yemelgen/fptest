@@ -31,6 +31,8 @@ def compute_authenticity_score(data, features, detection_result=None, consistenc
             penalty += 15
         elif sev == "medium":
             penalty += 5
+        elif sev == "low":
+            penalty += 2
         anomalies.append({"issue": signal["detail"], "severity": sev, "category": signal["signal"]})
 
     # --- Consistency Checks ---

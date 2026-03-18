@@ -47,14 +47,29 @@ def detect_engine(data):
         if r_engine in engine_map:
             results["resistance"] = engine_map[r_engine]
 
-    # Consensus
+    # Consensus — with weighted tie-breaking.
+    # globals and resistance are harder to spoof than math/errors precision,
+    # so they get priority when there's a tie.
     votes = [v for v in results.values() if v != "unknown"]
     if not votes:
         engine = "unknown"
     else:
         from collections import Counter
 
-        engine = Counter(votes).most_common(1)[0][0]
+        counter = Counter(votes)
+        top_count = counter.most_common(1)[0][1]
+        tied = [e for e, c in counter.items() if c == top_count]
+        if len(tied) == 1:
+            engine = tied[0]
+        else:
+            # Tie: prefer globals/resistance (runtime signals) over math/errors
+            for method in ("globals", "resistance"):
+                candidate = results.get(method)
+                if candidate and candidate != "unknown" and candidate in tied:
+                    engine = candidate
+                    break
+            else:
+                engine = tied[0]
 
     return {
         "engine": engine,
@@ -190,10 +205,16 @@ def detect_bot_signals(data):
         signals.append({"signal": "no_plugins", "severity": "medium", "detail": "No browser plugins detected"})
 
     if headless_signals.get("noTaskbar"):
+        # On Linux, many desktop environments (GNOME with auto-hide, tiling WMs)
+        # legitimately have availHeight == height, so reduce severity
+        nav = data.get("navigator", {})
+        platform_str = (nav.get("platform", "") or "").lower()
+        ua_str = (nav.get("userAgent", "") or "").lower()
+        is_linux = "linux" in platform_str or "linux" in ua_str
         signals.append(
             {
                 "signal": "no_taskbar",
-                "severity": "medium",
+                "severity": "low" if is_linux else "medium",
                 "detail": "Screen height equals available height (no taskbar)",
             }
         )
