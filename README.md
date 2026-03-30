@@ -64,7 +64,7 @@ python main.py
     clientRects: runRectTests(),
   };
 
-  await fetch("/fingerprint/calculate", {
+  await fetch("/api/calculate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
