@@ -25,7 +25,7 @@ async function collectResistance() {
         timerPrecision: null
     };
 
-    // Timer precision detection (skip for Blink — not applicable)
+    // Timer precision detection (skip for Blink - not applicable)
     if (!IS_BLINK) {
         try {
             const regex = (n) => new RegExp(`${n}+$`);

@@ -110,7 +110,7 @@ async function runCollectors() {
             Object.assign(results, result);
             console.log(`[fptest] done: ${name}`);
         } catch (e) {
-            console.warn(`[fptest] failed: ${name} — ${e.message}`);
+            console.warn(`[fptest] failed: ${name} - ${e.message}`);
             results[name] = { error: e.message };
         }
     }

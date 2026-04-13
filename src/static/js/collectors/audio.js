@@ -56,7 +56,7 @@ async function collectAudioOffline(seconds = 0.1) {
             suspiciousFlags.sampleMismatch = null;
         }
 
-        // 2. Unique sample count — too many unique samples suggests noise injection
+        // 2. Unique sample count - too many unique samples suggests noise injection
         try {
             const uniqueSamples = new Set(channelData);
             suspiciousFlags.uniqueSampleCount = uniqueSamples.size;
@@ -65,7 +65,7 @@ async function collectAudioOffline(seconds = 0.1) {
             suspiciousFlags.tooManyUnique = null;
         }
 
-        // 3. All zeros check — suggests blocking
+        // 3. All zeros check - suggests blocking
         try {
             const allZeros = channelData.every(v => v === 0);
             suspiciousFlags.allZeros = allZeros;

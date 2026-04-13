@@ -1,75 +1,52 @@
 import json
-import os
 from pathlib import Path
+from typing import Any
 
 _DATA_DIR = Path(__file__).parent.parent / "data"
-_cache = {}
+_cache: dict[str, Any] = {}
 
 
-def _load(filename):
+def _load(filename: str) -> Any:
     if filename not in _cache:
-        path = os.path.join(_DATA_DIR, filename)
-        with open(path) as f:
+        with open(_DATA_DIR / filename) as f:
             _cache[filename] = json.load(f)
     return _cache[filename]
 
 
-def load_gpu_signatures():
+def load_gpu_signatures() -> dict[str, Any]:
     return _load("gpu_signatures.json")
 
 
-def load_font_os_map():
+def load_font_os_map() -> dict[str, Any]:
     return _load("font_os_map.json")
 
 
-def load_math_engines():
+def load_math_engines() -> dict[str, Any]:
     return _load("math_engines.json")
 
 
-def load_audio_patterns():
+def load_audio_patterns() -> dict[str, Any]:
     return _load("audio_patterns.json")
 
 
-def match_gpu(renderer):
+def match_gpu(renderer: str) -> dict[str, Any]:
     """Match a WebGL renderer string against known GPU signatures.
 
     Returns: {brand, confidence, known, suspicious, vm_indicator}
     """
+
     if not renderer:
         return {"brand": None, "confidence": "none", "known": False, "suspicious": False, "vm_indicator": False}
 
     data = load_gpu_signatures()
+    renderer_lower = renderer.lower()
     renderer_upper = renderer.upper()
 
-    # Check for suspicious renderers
-    suspicious = False
-    for s in data["suspicious_renderers"]:
-        if s.lower() in renderer.lower():
-            suspicious = True
-            break
+    suspicious = any(s.lower() in renderer_lower for s in data["suspicious_renderers"])
+    vm_indicator = any(v.lower() in renderer_lower for v in data["virtual_machine_indicators"])
+    brand = next((b for b in data["known_brands"] if b.upper() in renderer_upper), None)
+    known = any(p.lower() in renderer_lower for p in data["known_renderers"])
 
-    # Check for VM indicators
-    vm_indicator = False
-    for v in data["virtual_machine_indicators"]:
-        if v.lower() in renderer.lower():
-            vm_indicator = True
-            break
-
-    # Match brand
-    brand = None
-    for b in data["known_brands"]:
-        if b.upper() in renderer_upper:
-            brand = b
-            break
-
-    # Check against known renderer patterns
-    known = False
-    for pattern in data["known_renderers"]:
-        if pattern.lower() in renderer.lower():
-            known = True
-            break
-
-    # Confidence
     if known and not suspicious:
         confidence = "high"
     elif known and suspicious:
@@ -88,30 +65,29 @@ def match_gpu(renderer):
     }
 
 
-def match_fonts_to_os(fonts):
+def match_fonts_to_os(fonts: list[str]) -> dict[str, Any]:
     """Match a list of detected fonts to an OS and version.
 
     Returns: {detected_os, version, confidence, matched_fonts}
     """
+
     if not fonts:
         return {"detected_os": None, "version": None, "confidence": "none", "matched_fonts": []}
 
     data = load_font_os_map()
-    font_set = set(f.lower() for f in fonts) if isinstance(fonts, list) else set()
+    font_set = {f.lower() for f in fonts} if isinstance(fonts, list) else set()
 
-    scores = {}  # os -> {score, version, matched}
+    scores: dict[str, dict[str, Any]] = {}
 
-    for os_name in ("windows", "macos", "linux", "android"):
+    for os_name in ("windows", "macos", "linux", "android", "ios"):
         os_data = data.get(os_name, {})
-        best_version = None
-        total_matched = []
+        best_version: str | None = None
+        total_matched: list[str] = []
 
-        # Check common fonts
         common = os_data.get("common", [])
         common_matches = [f for f in common if f.lower() in font_set]
         total_matched.extend(common_matches)
 
-        # Check version-specific fonts
         for version, version_fonts in os_data.items():
             if version == "common" or not isinstance(version_fonts, list):
                 continue
@@ -145,19 +121,19 @@ def match_fonts_to_os(fonts):
     }
 
 
-def match_engine_by_math(math_data):
+def match_engine_by_math(math_data: dict[str, Any] | None) -> str:
     """Identify JS engine from math function precision differences.
 
     Returns: engine name ('v8', 'spidermonkey', 'jsc', 'unknown')
     """
+
     if not math_data or not isinstance(math_data, dict):
         return "unknown"
 
     ref = load_math_engines()
     discriminators = ref.get("discriminators", [])
 
-    # Map our collected math field names to discriminator test names
-    field_map = {
+    field_map: dict[str, tuple[str, float]] = {
         "acos_0.5": ("acos", 0.5),
         "asin_0.5": ("asin", 0.5),
         "atanh_0.5": ("atanh", 0.5),
@@ -182,7 +158,6 @@ def match_engine_by_math(math_data):
             v8_score += 1
         if collected == disc.get("spidermonkey_value") or collected == disc.get("spidermonkey_alt_value"):
             sm_score += 1
-        # JSC shares values with V8 for most tests
         jsc_val = disc.get("jsc_value", disc.get("v8_value"))
         if collected == jsc_val:
             jsc_score += 1
@@ -191,13 +166,12 @@ def match_engine_by_math(math_data):
     best = max(scores, key=scores.get)
     if scores[best] == 0:
         return "unknown"
-    # If V8 and JSC tie (common since they share values), default to V8
     if scores["v8"] == scores["jsc"] and scores["v8"] > scores["spidermonkey"]:
         return "v8"
     return best
 
 
-def match_engine_by_errors(errors_data):
+def match_engine_by_errors(errors_data: dict[str, Any] | None) -> str:
     """Identify JS engine from error message patterns.
 
     Returns: engine name ('v8', 'spidermonkey', 'jsc', 'unknown')
@@ -210,8 +184,7 @@ def match_engine_by_errors(errors_data):
 
     scores = {"v8": 0, "spidermonkey": 0, "jsc": 0}
 
-    # Collect all error messages from the data
-    messages = []
+    messages: list[str] = []
     for _key, val in errors_data.items():
         if isinstance(val, dict) and "message" in val:
             messages.append(val["message"])
@@ -229,40 +202,36 @@ def match_engine_by_errors(errors_data):
     best = max(scores, key=scores.get)
     if scores[best] == 0:
         return "unknown"
-    # If there's a tie between engines, return unknown rather than arbitrary winner
     tied = [e for e, s in scores.items() if s == scores[best]]
     if len(tied) > 1:
         return "unknown"
     return best
 
 
-def match_audio_pattern(audio_data):
+def match_audio_pattern(audio_data: dict[str, Any]) -> dict[str, Any]:
     """Check audio fingerprint data against known patterns.
 
     Returns: {suspicious, flags, severity}
     """
+
     if not audio_data or not isinstance(audio_data, dict):
         return {"suspicious": False, "flags": [], "severity": "none"}
 
     patterns = load_audio_patterns()
     thresholds = patterns.get("thresholds", {})
-    flags = []
+    flags: list[dict[str, str]] = []
 
     offline = audio_data.get("offline", {})
     summary = offline.get("summary", {})
     suspicious_flags = offline.get("suspiciousFlags", {})
 
-    # Check JS-side flags
     if suspicious_flags.get("sampleMismatch"):
         flags.append({"flag": "sample_mismatch", "severity": "high"})
     if suspicious_flags.get("tooManyUnique"):
-        # Firefox legitimately produces all-unique audio samples due to
-        # full-precision floats in OfflineAudioContext. Only flag as medium.
         flags.append({"flag": "all_unique", "severity": "medium"})
     if suspicious_flags.get("allZeros"):
         flags.append({"flag": "all_zeros", "severity": "high"})
 
-    # Check summary statistics
     variance = summary.get("variance")
     if variance is not None:
         min_var = thresholds.get("min_expected_variance", 1e-20)

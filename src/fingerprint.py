@@ -1,64 +1,25 @@
 import hashlib
 import json
+from typing import Any
 
-# Feature set similarity threshold
-DICE_THRESHOLD = 0.6
-
-# Maximum hamming distance (in bits) allowed for combined-hash fuzzy match
-HAMMING_BITS_THRESHOLD = 32
-
-# Feature candidates
-FEATURES = [
-    "navigator",
-    "prototypes",
-    "chromium",
-    "math",
-    "errors",
-    "connection",
-    "uibars",
-    "screen",
-    "clientRects",
-    "storage",
-    "permissions",
-    "plugins",
-    "codecs",
-    "fonts",
-    "webgl",
-    "webgpu",
-    "multimediaDevices",
-    "capabilities",
-    "inputDevices",
-    "battery",
-    "orientation",
-    "deviceOrientation",
-    "sensors",
-    "audio",
-    "canvas",
-    "cssFeatures",
-    "tls",
-    "lies",
-    "headless",
-    "intl",
-    "svg",
-    "windowKeys",
-    "worker",
-    "webrtc",
-    "resistance",
-]
+from constants import FEATURES, STABLE_HASH_FEATURES
 
 
-def stable_stringify(obj):
+def stable_stringify(obj: Any) -> str:
     """Deterministic JSON serialization suitable for hashing."""
+
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def sha256_hex(s: str) -> str:
     """Compute SHA256 hex digest of a string."""
+
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
-def summarize_value(v, max_len=200):
+def summarize_value(v: Any, max_len: int = 200) -> str:
     """Return a short summary of a value for debugging/logging."""
+
     s = stable_stringify(v)
     return s if len(s) <= max_len else s[:max_len] + "...(truncated)"
 
@@ -69,25 +30,28 @@ def hex_to_bin(hexstr: str) -> str:
 
 def hamming_distance(hex1: str, hex2: str) -> int:
     """Bitwise Hamming distance between two SHA256 hex strings."""
+
     b1 = hex_to_bin(hex1)
     b2 = hex_to_bin(hex2)
-    L = max(len(b1), len(b2))
-    b1 = b1.zfill(L)
-    b2 = b2.zfill(L)
+    length = max(len(b1), len(b2))
+    b1 = b1.zfill(length)
+    b2 = b2.zfill(length)
     return sum(c1 != c2 for c1, c2 in zip(b1, b2, strict=False))
 
 
 def dice_coefficient(set_a: set, set_b: set) -> float:
     """Dice similarity coefficient for two sets."""
+
     if not set_a and not set_b:
         return 1.0
     inter = len(set_a & set_b)
     return 2 * inter / (len(set_a) + len(set_b))
 
 
-def extract_features(data: dict) -> dict:
+def extract_features(data: dict[str, Any]) -> dict[str, Any]:
     """Extract and normalize fingerprint features from raw JSON."""
-    features = {}
+
+    features: dict[str, Any] = {}
     for k in FEATURES:
         if k in data:
             features[k] = data[k]
@@ -107,7 +71,7 @@ def extract_features(data: dict) -> dict:
     ):
         features["audio.offline.summary"] = data["audio"]["offline"].get("summary", data["audio"]["offline"])
 
-    # battery summary — only keep supported flag, level/dischargingTime are too volatile
+    # battery summary - only keep supported flag, level/dischargingTime are too volatile
     if "battery" in data and isinstance(data["battery"], dict):
         battery = data["battery"]
         features["battery.summary"] = {
@@ -118,7 +82,7 @@ def extract_features(data: dict) -> dict:
     # navigator minimal
     if "navigator" in data and isinstance(data["navigator"], dict):
         nav = data["navigator"]
-        nav_pick = {}
+        nav_pick: dict[str, Any] = {}
         for key in ("userAgent", "platform", "language"):
             if key in nav:
                 nav_pick[key] = nav[key]
@@ -138,34 +102,20 @@ def extract_features(data: dict) -> dict:
     return features
 
 
-def compute_hashes(features: dict) -> dict:
+def compute_hashes(features: dict[str, Any]) -> dict[str, str]:
     """Compute per-feature SHA256 hashes."""
-    fh = {}
-    for feat, val in features.items():
-        s = stable_stringify(val)
-        fh[feat] = sha256_hex(s)
-    return fh
+
+    return {feat: sha256_hex(stable_stringify(val)) for feat, val in features.items()}
 
 
-def compute_combined_stable_hash(feature_hashes: dict) -> (str, list):
+def compute_combined_stable_hash(feature_hashes: dict[str, str]) -> tuple[str, list[str]]:
+    """Combine stable feature hashes into a single hash (visitor_id).
+
+    Returns: (combined_hash, stable_keys)
     """
-    Combine stable feature hashes into a single hash (visitor_id).
-    Returns: (combined_stable_hash, visitor_id, stable_keys)
-    """
-    stable_keys = [
-        k
-        for k in feature_hashes
-        if k
-        in (
-            "fonts",
-            "canvas.shapes",
-            "canvas.gradient",
-            "canvas.webgl",
-            "navigator.min",
-            "screen.min",
-        )
-    ]
 
-    stable_concat = "|".join([f"{k}:{feature_hashes[k]}" for k in sorted(stable_keys)])
+    stable_keys = [k for k in feature_hashes if k in STABLE_HASH_FEATURES]
+
+    stable_concat = "|".join(f"{k}:{feature_hashes[k]}" for k in sorted(stable_keys))
     combined_hash = sha256_hex(stable_concat)
     return combined_hash, stable_keys

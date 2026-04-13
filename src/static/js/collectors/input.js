@@ -13,7 +13,7 @@ async function collectInputDevices() {
         hasWheelEvents: "onwheel" in window,
         hasGamepadEvents: "ongamepadconnected" in window,
 
-        // Media query pointer/hover detection — reflects actual device capabilities
+        // Media query pointer/hover detection - reflects actual device capabilities
         // and harder to spoof than JS API presence checks
         pointer: matchMediaValue("(pointer: fine)", "(pointer: coarse)", "(pointer: none)"),
         anyPointer: matchMediaValue("(any-pointer: fine)", "(any-pointer: coarse)", "(any-pointer: none)"),

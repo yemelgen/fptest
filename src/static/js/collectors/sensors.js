@@ -21,7 +21,7 @@ async function collectSensors() {
         vibration: "vibrate" in navigator,
     };
 
-    // Functional sensor checks — try to instantiate and read a value
+    // Functional sensor checks - try to instantiate and read a value
     const sensorTests = [
         { name: "accelerometer", ctor: "Accelerometer", fields: ["x", "y", "z"] },
         { name: "gyroscope", ctor: "Gyroscope", fields: ["x", "y", "z"] },

@@ -1,12 +1,17 @@
 import re
+from typing import Any
+
+from constants import COMMON_DPRS, CONSISTENCY_DEDUCTION_PER_ISSUE, VALID_DEVICE_MEMORY
+from utils import safe_dict
 
 
-def check_platform_consistency(data):
+def check_platform_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate platform across navigator, UA, worker, and fonts."""
+
     signals = {}
     issues = []
 
-    nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
+    nav = safe_dict(data, "navigator")
     ua = nav.get("userAgent", "") or ""
     platform = nav.get("platform", "") or ""
 
@@ -89,12 +94,13 @@ def check_platform_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_timezone_consistency(data):
+def check_timezone_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate timezone across datetime, worker, and Intl."""
+
     issues = []
     signals = {}
 
-    dt = data.get("datetime", {}) if isinstance(data.get("datetime"), dict) else {}
+    dt = safe_dict(data, "datetime")
     worker = data.get("worker", {})
     intl = data.get("intl", {})
 
@@ -132,8 +138,9 @@ def check_timezone_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_webgl_consistency(data):
+def check_webgl_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate WebGL renderer between main thread and worker."""
+
     issues = []
     signals = {}
 
@@ -171,12 +178,13 @@ def check_webgl_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_hardware_consistency(data):
+def check_hardware_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate hardware info between main thread and worker."""
+
     issues = []
     signals = {}
 
-    nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
+    nav = safe_dict(data, "navigator")
     worker = data.get("worker", {})
 
     main_cores = nav.get("hardwareConcurrency")
@@ -200,20 +208,19 @@ def check_hardware_consistency(data):
     if main_cores is not None and (not isinstance(main_cores, (int, float)) or main_cores < 1 or main_cores > 512):
         issues.append(f"unreasonable hardwareConcurrency: {main_cores}")
 
-    if main_memory is not None:
-        valid_memory = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128]
-        if main_memory not in valid_memory:
-            issues.append(f"non-standard deviceMemory: {main_memory}")
+    if main_memory is not None and main_memory not in VALID_DEVICE_MEMORY:
+        issues.append(f"non-standard deviceMemory: {main_memory}")
 
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_language_consistency(data):
+def check_language_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate language across navigator, Intl, and worker."""
+
     issues = []
     signals = {}
 
-    nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
+    nav = safe_dict(data, "navigator")
     intl = data.get("intl", {})
     worker = data.get("worker", {})
     main_lang = nav.get("language", "") or ""
@@ -244,7 +251,7 @@ def check_language_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_screen_consistency(data):
+def check_screen_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate screen dimensions with other signals."""
     issues = []
     signals = {}
@@ -276,10 +283,8 @@ def check_screen_consistency(data):
         issues.append("non-integer screen height")
 
     # DPR should be a common value
-    if dpr is not None:
-        common_dprs = [1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5]
-        if dpr not in common_dprs and dpr > 0:
-            issues.append(f"unusual devicePixelRatio: {dpr}")
+    if dpr is not None and dpr not in COMMON_DPRS and dpr > 0:
+        issues.append(f"unusual devicePixelRatio: {dpr}")
 
     # 800x600 is the default headless Chrome resolution
     if width == 800 and height == 600:
@@ -288,8 +293,9 @@ def check_screen_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_webrtc_consistency(data):
+def check_webrtc_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate WebRTC codec set against detected engine."""
+
     issues = []
     signals = {}
 
@@ -314,8 +320,8 @@ def check_webrtc_consistency(data):
     signals["video_codecs"] = sorted(video_mimes)
     signals["audio_codecs"] = sorted(audio_mimes)
 
-    # Safari/WebKit may return empty SDP codecs — that's normal for JSC
-    nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
+    # Safari/WebKit may return empty SDP codecs - that's normal for JSC
+    nav = safe_dict(data, "navigator")
     ua = (nav.get("userAgent", "") or "").lower()
     is_safari = "safari" in ua and "chrome" not in ua
 
@@ -334,8 +340,9 @@ def check_webrtc_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_intl_consistency(data):
+def check_intl_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate Intl constructor locales with each other and navigator."""
+
     issues = []
     signals = {}
 
@@ -343,7 +350,7 @@ def check_intl_consistency(data):
     if not isinstance(intl, dict):
         return {"signals": {}, "issues": [], "consistent": True}
 
-    nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
+    nav = safe_dict(data, "navigator")
     worker = data.get("worker", {})
 
     # Collect all Intl locales
@@ -400,8 +407,9 @@ def check_intl_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_codec_consistency(data):
+def check_codec_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate media codec support against declared browser/engine."""
+
     issues = []
     signals = {}
 
@@ -418,7 +426,7 @@ def check_codec_consistency(data):
     signals["audio_codecs"] = audio
 
     # Detect engine from other data for cross-ref
-    nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
+    nav = safe_dict(data, "navigator")
     ua = (nav.get("userAgent", "") or "").lower()
 
     # Chrome/Blink: should support VP8, VP9, H264, Opus
@@ -460,8 +468,9 @@ def check_codec_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_css_consistency(data):
+def check_css_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Cross-validate CSS feature support against declared browser."""
+
     issues = []
     signals = {}
 
@@ -476,7 +485,7 @@ def check_css_consistency(data):
     if isinstance(resistance, dict) and resistance.get("privacy"):
         return {"signals": signals, "issues": [], "consistent": True}
 
-    nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
+    nav = safe_dict(data, "navigator")
     ua = (nav.get("userAgent", "") or "").lower()
 
     # Features expected in all modern browsers
@@ -532,8 +541,9 @@ def check_css_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_storage_consistency(data):
+def check_storage_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Validate storage API availability patterns."""
+
     issues = []
     signals = {}
 
@@ -561,8 +571,9 @@ def check_storage_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def check_permissions_consistency(data):
+def check_permissions_consistency(data: dict[str, Any]) -> dict[str, Any]:
     """Validate permission states for consistency."""
+
     issues = []
     signals = {}
 
@@ -575,7 +586,7 @@ def check_permissions_consistency(data):
     signals["states"] = permissions
 
     # clipboard-write is usually "granted" in Chrome by default
-    nav = data.get("navigator", {}) if isinstance(data.get("navigator"), dict) else {}
+    nav = safe_dict(data, "navigator")
     ua = (nav.get("userAgent", "") or "").lower()
     if "chrome" in ua and permissions.get("clipboard-write") == "denied":
         issues.append("clipboard-write denied in Chrome (usually granted by default)")
@@ -587,11 +598,12 @@ def check_permissions_consistency(data):
     return {"signals": signals, "issues": issues, "consistent": len(issues) == 0}
 
 
-def run_all_consistency_checks(data):
+def run_all_consistency_checks(data: dict[str, Any]) -> dict[str, Any]:
     """Run all cross-signal consistency checks.
 
     Returns: {checks: {name: result}, total_issues, overall_score}
     """
+
     checks = {
         "platform": check_platform_consistency(data),
         "timezone": check_timezone_consistency(data),
@@ -611,7 +623,7 @@ def run_all_consistency_checks(data):
     consistent_count = sum(1 for c in checks.values() if c["consistent"])
 
     # Score: 100 = fully consistent, deduct per issue
-    score = max(0, 100 - (total_issues * 15))
+    score = max(0, 100 - (total_issues * CONSISTENCY_DEDUCTION_PER_ISSUE))
 
     return {
         "checks": checks,

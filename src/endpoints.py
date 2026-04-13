@@ -11,11 +11,12 @@ fingerprint_router = Blueprint("fptest", __name__)
 
 
 def headers_to_dict(headers):
-    # Convert Headers object into plain dict (for JSON injection)
+    """Convert Headers object into plain dict (for JSON injection)."""
+
     return {k: v for k, v in headers.items()}
 
 
-@fingerprint_router.route("/calculate", methods=["POST", "GET"])
+@fingerprint_router.route("/calculate", methods=["POST"])
 def calculate_fingerprint():
     try:
         data = request.json

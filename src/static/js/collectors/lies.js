@@ -17,7 +17,7 @@ async function collectLies() {
         const lies = [];
 
         try {
-            // toString check — native functions have specific format
+            // toString check - native functions have specific format
             const str = Function.prototype.toString.call(fn);
             if (!/\[native code\]/.test(str)) {
                 lies.push('failed toString');
@@ -28,7 +28,7 @@ async function collectLies() {
         }
 
         try {
-            // Property descriptor check — native functions should only have 'length' and 'name'
+            // Property descriptor check - native functions should only have 'length' and 'name'
             const ownKeys = Object.getOwnPropertyNames(fn);
             const extra = ownKeys.filter(k => k !== 'length' && k !== 'name' && k !== 'prototype');
             if (extra.length > 0) {
@@ -47,14 +47,14 @@ async function collectLies() {
         } catch (e) {}
 
         try {
-            // 'prototype' in function check — most native methods don't have 'prototype'
+            // 'prototype' in function check - most native methods don't have 'prototype'
             if ('prototype' in fn && !['Function', 'Object', 'Array'].some(c => name.startsWith(c))) {
                 lies.push('failed prototype in function');
             }
         } catch (e) {}
 
         try {
-            // Object.create toString check — proxied functions behave differently
+            // Object.create toString check - proxied functions behave differently
             const created = Object.create(fn);
             try {
                 created.toString();
@@ -76,7 +76,7 @@ async function collectLies() {
         } catch (e) {}
 
         try {
-            // arguments/caller access — should throw in strict mode for native functions
+            // arguments/caller access - should throw in strict mode for native functions
             const desc = Object.getOwnPropertyDescriptor(fn, 'arguments');
             if (desc && desc.value !== null && desc.value !== undefined) {
                 lies.push('failed arguments descriptor');
@@ -117,7 +117,7 @@ async function collectLies() {
                 Object.setPrototypeOf(proxy, Object.create(proxy)).toString();
                 lies.push('failed chain cycle');
             } catch (e) {
-                // Expected for native — TypeError on cycle
+                // Expected for native - TypeError on cycle
             } finally {
                 try { Object.setPrototypeOf(fn, nativeProto); } catch (e) {}
             }
@@ -310,7 +310,7 @@ async function collectLies() {
         }
     } catch (e) {}
 
-    // Function.prototype.toString itself — meta-lie detection
+    // Function.prototype.toString itself - meta-lie detection
     let toStringLied = false;
     try {
         const toStr = Function.prototype.toString;

@@ -15,6 +15,7 @@
             case 'ru-RU':
                 var title = "Ваш веб-браузер не поддерживается";
                 var message = "Ваш веб-браузер устарел и больше не поддерживается.<br/>Пожалуйства обновите ваш веб-браузер или используйте другой.";
+                break;
             case 'zh-CN':
             case 'zh-TW':
             case 'zh-HK':
@@ -34,4 +35,3 @@
         document.getElementById('content').classList.remove('hidden');
     }
 })();
-

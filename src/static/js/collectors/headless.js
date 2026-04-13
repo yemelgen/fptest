@@ -8,7 +8,7 @@ async function collectHeadless() {
     // HeadlessChrome in user agent
     signals.headlessUA = /HeadlessChrome/.test(navigator.userAgent) || /HeadlessChrome/.test(navigator.appVersion);
 
-    // Permissions bug — Blink-specific inconsistency
+    // Permissions bug - Blink-specific inconsistency
     // Notification.permission='denied' but permissions.query reports 'prompt'
     try {
         if (typeof Notification !== 'undefined' && navigator.permissions) {
@@ -28,7 +28,7 @@ async function collectHeadless() {
     // No mimeTypes
     signals.noMimeTypes = navigator.mimeTypes ? navigator.mimeTypes.length === 0 : true;
 
-    // No taskbar — screen.height === screen.availHeight
+    // No taskbar - screen.height === screen.availHeight
     signals.noTaskbar = (screen.height === screen.availHeight && screen.width === screen.availWidth);
 
     // Notification denied
@@ -41,7 +41,7 @@ async function collectHeadless() {
     // pdfViewerEnabled disabled
     signals.pdfDisabled = navigator.pdfViewerEnabled === false;
 
-    // Bad chrome.runtime — stealth detection
+    // Bad chrome.runtime - stealth detection
     // Real Chrome has sendMessage/connect without 'prototype' property
     try {
         if (window.chrome && window.chrome.runtime) {
@@ -65,7 +65,7 @@ async function collectHeadless() {
         signals.noChrome = false;
     }
 
-    // High chrome index — stealth plugins add chrome late
+    // High chrome index - stealth plugins add chrome late
     try {
         if ('chrome' in window) {
             const keys = Object.keys(window);
@@ -78,7 +78,7 @@ async function collectHeadless() {
         signals.highChromeIndex = null;
     }
 
-    // iframe srcdoc proxy detection — stealth.js artifact
+    // iframe srcdoc proxy detection - stealth.js artifact
     {
         let iframe = null;
         try {
@@ -95,7 +95,7 @@ async function collectHeadless() {
         }
     }
 
-    // visualViewport matches screen — suggests no browser chrome
+    // visualViewport matches screen - suggests no browser chrome
     try {
         if (window.visualViewport) {
             signals.vvpMatchesScreen = (
@@ -136,7 +136,7 @@ async function collectHeadless() {
         signals.suspiciousGPU = null;
     }
 
-    // ActiveText background color — headless Chrome renders as rgb(255, 0, 0)
+    // ActiveText background color - headless Chrome renders as rgb(255, 0, 0)
     try {
         if (isBlink) {
             const div = document.createElement('div');

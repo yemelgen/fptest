@@ -1,19 +1,31 @@
 import math
+from typing import Any
 
 import consistency
 import datasets
 import detection
+from constants import (
+    BOT_PROBABILITY_MIDPOINT,
+    BOT_PROBABILITY_STEEPNESS,
+    CONSISTENCY_WEIGHTS,
+    SEVERITY_PENALTIES,
+)
 
 
-def compute_authenticity_score(data, features, detection_result=None, consistency_result=None):
+def compute_authenticity_score(
+    data: dict[str, Any],
+    features: dict[str, Any],
+    detection_result: dict[str, Any] | None = None,
+    consistency_result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Compute a comprehensive authenticity score for a browser fingerprint.
 
     Accepts pre-computed detection and consistency results to avoid duplicate work.
     """
-    anomalies = []
-    penalty = 0  # Deductions from 100
 
-    # Use pre-computed results or compute fresh
+    anomalies: list[dict[str, str]] = []
+    penalty = 0
+
     if detection_result:
         engine_result = detection_result["engine"]
         platform_result = detection_result["platform"]
@@ -25,25 +37,19 @@ def compute_authenticity_score(data, features, detection_result=None, consistenc
 
     for signal in bot_signals:
         sev = signal["severity"]
-        if sev == "critical":
-            penalty += 25
-        elif sev == "high":
-            penalty += 15
-        elif sev == "medium":
-            penalty += 5
-        elif sev == "low":
-            penalty += 2
+        penalty += SEVERITY_PENALTIES.get(sev, 0)
         anomalies.append({"issue": signal["detail"], "severity": sev, "category": signal["signal"]})
 
-    # --- Consistency Checks ---
     if consistency_result is None:
         consistency_result = consistency.run_all_consistency_checks(data)
-    consistency_score = consistency_result["overall_score"]
+    consistency_score: int = consistency_result["overall_score"]
 
     for check_name, check in consistency_result["checks"].items():
+        weight = CONSISTENCY_WEIGHTS.get(check_name, 8)
         for issue in check["issues"]:
-            penalty += 8
-            anomalies.append({"issue": issue, "severity": "medium", "category": "consistency." + check_name})
+            penalty += weight
+            sev = "high" if weight >= 10 else "medium" if weight >= 6 else "low"
+            anomalies.append({"issue": issue, "severity": sev, "category": "consistency." + check_name})
 
     # Platform Match (only penalize if not already caught by bot_signals)
     seen_categories = {a["category"] for a in anomalies}
@@ -92,11 +98,21 @@ def compute_authenticity_score(data, features, detection_result=None, consistenc
         engine_ua_match = False
 
     if not engine_ua_match and engine != "unknown":
-        penalty += 15
+        confidence = engine_result.get("confidence", "medium")
+        if confidence == "high":
+            engine_penalty = 15
+            sev = "high"
+        elif confidence == "medium":
+            engine_penalty = 8
+            sev = "medium"
+        else:
+            engine_penalty = 3
+            sev = "low"
+        penalty += engine_penalty
         anomalies.append(
             {
-                "issue": f"Detected engine ({engine}) does not match user agent",
-                "severity": "high",
+                "issue": f"Detected engine ({engine}) does not match user agent (confidence: {confidence})",
+                "severity": sev,
                 "category": "engine_ua_mismatch",
             }
         )
@@ -149,8 +165,9 @@ def compute_authenticity_score(data, features, detection_result=None, consistenc
     authenticity_score = max(0, min(100, 100 - penalty))
 
     # Bot probability: sigmoid of weighted penalty
-    # Higher penalty -> higher bot probability
-    bot_probability = round(1.0 / (1.0 + math.exp(-0.08 * (penalty - 30))), 3)
+    bot_probability = round(
+        1.0 / (1.0 + math.exp(-BOT_PROBABILITY_STEEPNESS * (penalty - BOT_PROBABILITY_MIDPOINT))), 3
+    )
 
     # Consistency grade
     if consistency_score >= 90:

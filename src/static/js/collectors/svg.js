@@ -45,7 +45,7 @@ async function collectSVG() {
             svg.removeChild(textEl);
         }
 
-        // Test emojis — dimensions vary by OS/renderer
+        // Test emojis - dimensions vary by OS/renderer
         const emojiMetrics = {};
         for (const emoji of emojiTests) {
             const textEl = document.createElementNS(ns, 'text');

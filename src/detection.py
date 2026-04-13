@@ -1,24 +1,24 @@
 import re
 from collections import Counter
+from typing import Any
 
 import datasets
+from constants import AUTOMATION_EXACT, AUTOMATION_PREFIXES, PRIVACY_EXPECTED_SIGNALS
 
 
-def detect_engine(data):
+def detect_engine(data: dict[str, Any]) -> dict[str, Any]:
     """Detect JavaScript engine from collected data.
 
     Uses math precision, error messages, and window keys to identify:
     'v8' (Chrome/Edge/Opera), 'spidermonkey' (Firefox), 'jsc' (Safari), 'unknown'
     """
-    results = {}
+    results: dict[str, str] = {}
 
     # Method 1: Math precision
-    math_data = data.get("math")
-    results["math"] = datasets.match_engine_by_math(math_data)
+    results["math"] = datasets.match_engine_by_math(data.get("math"))
 
     # Method 2: Error messages
-    errors_data = data.get("errors")
-    results["errors"] = datasets.match_engine_by_errors(errors_data)
+    results["errors"] = datasets.match_engine_by_errors(data.get("errors"))
 
     # Method 3: Window keys / engine globals
     window_keys = data.get("windowKeys", {})
@@ -29,12 +29,13 @@ def detect_engine(data):
         results["globals"] = "jsc"
     elif engine_globals.get("netscape") or engine_globals.get("InstallTrigger"):
         results["globals"] = "spidermonkey"
-    elif engine_globals.get("chrome") or engine_globals.get("Atomics"):
+    elif len(prefixed.get("moz", [])) > 3:
+        # Moz-prefixed globals survive across Firefox versions (unlike netscape/InstallTrigger)
+        results["globals"] = "spidermonkey"
+    elif engine_globals.get("chrome"):
         results["globals"] = "v8"
     elif len(prefixed.get("webkit", [])) > 5 and not engine_globals.get("chrome"):
         results["globals"] = "jsc"
-    elif len(prefixed.get("moz", [])) > 3:
-        results["globals"] = "spidermonkey"
     else:
         results["globals"] = "unknown"
 
@@ -59,7 +60,6 @@ def detect_engine(data):
         if len(tied) == 1:
             engine = tied[0]
         else:
-            # Tie: prefer globals/resistance (runtime signals) over math/errors
             for method in ("globals", "resistance"):
                 candidate = results.get(method)
                 if candidate and candidate != "unknown" and candidate in tied:
@@ -75,15 +75,15 @@ def detect_engine(data):
     }
 
 
-def detect_platform(data):
+def detect_platform(data: dict[str, Any]) -> dict[str, Any]:
     """Detect the declared and actual platform from collected data.
 
     Cross-references navigator, user agent, and fonts to determine if
     the declared platform matches reality.
     """
     nav = data.get("navigator", {})
-    ua = nav.get("userAgent", "")
-    platform = nav.get("platform", "")
+    ua: str = nav.get("userAgent", "")
+    platform: str = nav.get("platform", "")
 
     # Extract declared platform from UA
     declared = "unknown"
@@ -115,9 +115,10 @@ def detect_platform(data):
 
     # Detect from fonts
     fonts_data = data.get("fonts", {})
-    font_list = []
-    if isinstance(fonts_data, dict):
-        # fonts might be a dict of {fontName: true/false} or a list
+    font_list: list[str] = []
+    if isinstance(fonts_data, list):
+        font_list = fonts_data
+    elif isinstance(fonts_data, dict):
         if "detected" in fonts_data:
             font_list = fonts_data["detected"]
         else:
@@ -128,7 +129,7 @@ def detect_platform(data):
     # Detect from WebGL renderer
     webgl = data.get("webgl", {})
     basic_info = webgl.get("basicInfo", {})
-    renderer = basic_info.get("unmaskedRenderer", "")
+    renderer: str = basic_info.get("unmaskedRenderer", "")
     gpu_result = datasets.match_gpu(renderer)
 
     # Check if GPU brand is consistent with platform
@@ -138,9 +139,6 @@ def detect_platform(data):
         any(brand.lower() in renderer.lower() for brand in platform_gpus) if renderer and platform_gpus else None
     )
 
-    match = declared == platform_os
-    font_match = (declared == font_result.get("detected_os")) if font_result.get("detected_os") else None
-
     return {
         "declared": declared,
         "platform_os": platform_os,
@@ -148,32 +146,27 @@ def detect_platform(data):
         "font_confidence": font_result.get("confidence"),
         "gpu": gpu_result,
         "gpu_platform_consistent": gpu_consistent,
-        "ua_platform_match": match,
-        "ua_font_match": font_match,
+        "ua_platform_match": declared == platform_os,
+        "ua_font_match": (declared == font_result.get("detected_os")) if font_result.get("detected_os") else None,
     }
 
 
-def detect_bot_signals(data):
-    """Detect bot/automation signals from collected data.
-
-    Returns list of triggered signals with severity.
-    """
-    signals = []
-
-    # Webdriver flag
-    nav = data.get("navigator", {})
-    if nav.get("webdriver"):
-        signals.append({"signal": "webdriver", "severity": "critical", "detail": "navigator.webdriver is true"})
-
-    # Headless signals from headless collector
+def _check_headless_signals(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Check headless collector signals for bot indicators."""
+    signals: list[dict[str, str]] = []
     headless = data.get("headless", {})
-    headless_signals = headless.get("signals", {})
-    if headless_signals.get("headlessUA"):
+    hs = headless.get("signals", {})
+
+    nav = data.get("navigator", {})
+    ua = (nav.get("userAgent", "") or "").lower()
+    platform_str = (nav.get("platform", "") or "").lower()
+
+    if hs.get("headlessUA"):
         signals.append(
             {"signal": "headless_ua", "severity": "critical", "detail": "HeadlessChrome detected in user agent"}
         )
 
-    if headless_signals.get("permissionsBug"):
+    if hs.get("permissionsBug"):
         signals.append(
             {
                 "signal": "permissions_bug",
@@ -182,7 +175,7 @@ def detect_bot_signals(data):
             }
         )
 
-    if headless_signals.get("badChromeRuntime"):
+    if hs.get("badChromeRuntime"):
         signals.append(
             {
                 "signal": "bad_chrome_runtime",
@@ -191,26 +184,21 @@ def detect_bot_signals(data):
             }
         )
 
-    if headless_signals.get("suspiciousGPU"):
+    if hs.get("suspiciousGPU"):
         signals.append(
             {
                 "signal": "suspicious_gpu",
                 "severity": "high",
-                "detail": "Known headless/VM GPU: " + str(headless_signals.get("gpuRenderer", "")),
+                "detail": "Known headless/VM GPU: " + str(hs.get("gpuRenderer", "")),
             }
         )
 
-    if headless_signals.get("noPlugins"):
+    if hs.get("noPlugins"):
         signals.append({"signal": "no_plugins", "severity": "medium", "detail": "No browser plugins detected"})
 
-    if headless_signals.get("noTaskbar"):
-        # Mobile devices and Linux DEs (GNOME auto-hide, tiling WMs) legitimately
-        # have availHeight == height, so reduce or skip the signal
-        nav = data.get("navigator", {})
-        platform_str = (nav.get("platform", "") or "").lower()
-        ua_str = (nav.get("userAgent", "") or "").lower()
-        is_mobile = bool(re.search(r"iphone|ipad|ipod|android", ua_str))
-        is_linux = "linux" in platform_str or "linux" in ua_str
+    if hs.get("noTaskbar"):
+        is_mobile = bool(re.search(r"iphone|ipad|ipod|android", ua))
+        is_linux = "linux" in platform_str or "linux" in ua
         if not is_mobile:
             signals.append(
                 {
@@ -220,9 +208,7 @@ def detect_bot_signals(data):
                 }
             )
 
-    # iframeProxy: chrome in iframe srcdoc is normal for real Chrome.
-    # Only flag when main window has no chrome (stealth plugin added it to iframe only)
-    if headless_signals.get("iframeProxy") and headless_signals.get("noChrome"):
+    if hs.get("iframeProxy") and hs.get("noChrome"):
         signals.append(
             {
                 "signal": "iframe_proxy",
@@ -231,7 +217,7 @@ def detect_bot_signals(data):
             }
         )
 
-    if headless_signals.get("highChromeIndex"):
+    if hs.get("highChromeIndex"):
         signals.append(
             {
                 "signal": "high_chrome_index",
@@ -240,12 +226,8 @@ def detect_bot_signals(data):
             }
         )
 
-    # ActiveText renders as rgb(255,0,0) by default on macOS, so only flag
-    # on non-macOS platforms where it indicates headless Chrome
-    if headless_signals.get("hasKnownBgColor"):
-        nav = data.get("navigator", {})
-        ua = nav.get("userAgent", "")
-        is_macos = bool(re.search(r"Mac\s?OS|Macintosh", ua, re.I))
+    if hs.get("hasKnownBgColor"):
+        is_macos = bool(re.search(r"mac\s?os|macintosh", ua))
         if not is_macos:
             signals.append(
                 {
@@ -255,7 +237,7 @@ def detect_bot_signals(data):
                 }
             )
 
-    if headless_signals.get("noWebShare"):
+    if hs.get("noWebShare"):
         signals.append(
             {
                 "signal": "no_web_share",
@@ -264,7 +246,7 @@ def detect_bot_signals(data):
             }
         )
 
-    if headless_signals.get("pdfDisabled"):
+    if hs.get("pdfDisabled"):
         signals.append(
             {
                 "signal": "pdf_viewer_disabled",
@@ -273,7 +255,7 @@ def detect_bot_signals(data):
             }
         )
 
-    if headless_signals.get("blankUADataPlatform"):
+    if hs.get("blankUADataPlatform"):
         signals.append(
             {
                 "signal": "blank_uadata_platform",
@@ -282,7 +264,10 @@ def detect_bot_signals(data):
             }
         )
 
-    if headless_signals.get("noContentIndex"):
+    # ContentIndex and ContactsManager are Android-only APIs
+    is_android = "android" in ua
+
+    if hs.get("noContentIndex") and is_android:
         signals.append(
             {
                 "signal": "no_content_index",
@@ -291,7 +276,7 @@ def detect_bot_signals(data):
             }
         )
 
-    if headless_signals.get("noContactsManager"):
+    if hs.get("noContactsManager") and is_android:
         signals.append(
             {
                 "signal": "no_contacts_manager",
@@ -300,9 +285,15 @@ def detect_bot_signals(data):
             }
         )
 
-    # Lie detection signals
+    return signals
+
+
+def _check_lie_signals(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Check lie detection data for bot indicators."""
+    signals: list[dict[str, str]] = []
     lies = data.get("lies", {})
-    lie_count = lies.get("totalCount", 0)
+    lie_count: int = lies.get("totalCount", 0)
+
     if lie_count > 0:
         severity = "critical" if lie_count > 10 else "high" if lie_count > 3 else "medium"
         signals.append(
@@ -322,7 +313,13 @@ def detect_bot_signals(data):
             }
         )
 
-    # Audio suspicious patterns
+    return signals
+
+
+def _check_audio_canvas_signals(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Check audio and canvas data for manipulation indicators."""
+    signals: list[dict[str, str]] = []
+
     audio = data.get("audio", {})
     audio_result = datasets.match_audio_pattern(audio)
     if audio_result.get("suspicious"):
@@ -335,7 +332,6 @@ def detect_bot_signals(data):
                 }
             )
 
-    # Canvas noise detection
     canvas = data.get("canvas", {})
     pixel_noise = canvas.get("pixelNoise", {})
     if pixel_noise.get("noiseDetected"):
@@ -347,57 +343,50 @@ def detect_bot_signals(data):
             }
         )
 
-    # Client litter (injected globals)
-    window_keys = data.get("windowKeys", {})
-    if isinstance(window_keys, dict):
-        client_litter = window_keys.get("clientLitter", {})
-        if isinstance(client_litter, dict) and not client_litter.get("error"):
-            injected = client_litter.get("injectedKeys", [])
-            litter_count = client_litter.get("count", 0)
-            automation_prefixes = (
-                "cdc_",
-                "$cdc_",
-                "$wdc_",
-                "__webdriver",
-                "__selenium",
-                "__driver",
-                "__fxdriver",
-                "_Selenium",
-                "__nightmare",
-                "__playwright",
-                "__pw_",
-            )
-            automation_exact = {
-                "callSelenium",
-                "_phantom",
-                "callPhantom",
-                "domAutomation",
-                "domAutomationController",
-                "_selenium",
-                "__playwright",
-                "playwright",
-            }
-            found_automation = [
-                k for k in injected if k in automation_exact or any(k.startswith(p) for p in automation_prefixes)
-            ]
-            if found_automation:
-                signals.append(
-                    {
-                        "signal": "automation_globals",
-                        "severity": "critical",
-                        "detail": f"Automation framework globals: {', '.join(found_automation[:5])}",
-                    }
-                )
-            elif litter_count > 50:
-                signals.append(
-                    {
-                        "signal": "excessive_globals",
-                        "severity": "medium",
-                        "detail": f"{litter_count} injected globals detected",
-                    }
-                )
+    return signals
 
-    # Missing storage APIs (headless/minimal environments)
+
+def _check_client_litter_signals(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Check window keys for automation framework globals."""
+    signals: list[dict[str, str]] = []
+    window_keys = data.get("windowKeys", {})
+    if not isinstance(window_keys, dict):
+        return signals
+
+    client_litter = window_keys.get("clientLitter", {})
+    if not isinstance(client_litter, dict) or client_litter.get("error"):
+        return signals
+
+    injected: list[str] = client_litter.get("injectedKeys", [])
+    litter_count: int = client_litter.get("count", 0)
+
+    found_automation = [
+        k for k in injected if k in AUTOMATION_EXACT or any(k.startswith(p) for p in AUTOMATION_PREFIXES)
+    ]
+    if found_automation:
+        signals.append(
+            {
+                "signal": "automation_globals",
+                "severity": "critical",
+                "detail": f"Automation framework globals: {', '.join(found_automation[:5])}",
+            }
+        )
+    elif litter_count > 50:
+        signals.append(
+            {
+                "signal": "excessive_globals",
+                "severity": "medium",
+                "detail": f"{litter_count} injected globals detected",
+            }
+        )
+
+    return signals
+
+
+def _check_environment_signals(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Check storage, permissions, webrtc, and connection for anomalies."""
+    signals: list[dict[str, str]] = []
+
     storage = data.get("storage", {})
     if isinstance(storage, dict):
         if storage.get("localStorage") is False and storage.get("sessionStorage") is False:
@@ -411,7 +400,6 @@ def detect_bot_signals(data):
         if storage.get("indexedDB") is False:
             signals.append({"signal": "no_indexeddb", "severity": "medium", "detail": "IndexedDB not available"})
 
-    # Permissions anomalies
     permissions = data.get("permissions")
     if isinstance(permissions, dict):
         states = {k: v for k, v in permissions.items() if v != "unsupported"}
@@ -424,7 +412,6 @@ def detect_bot_signals(data):
                 }
             )
 
-    # WebRTC blocked/missing
     webrtc = data.get("webrtc", {})
     if isinstance(webrtc, dict) and not webrtc.get("supported"):
         signals.append(
@@ -435,38 +422,45 @@ def detect_bot_signals(data):
             }
         )
 
-    # Connection anomalies
     connection = data.get("connection", {})
     if isinstance(connection, dict) and connection.get("supported") and connection.get("rtt") == 0:
         signals.append({"signal": "zero_rtt", "severity": "medium", "detail": "Network RTT is exactly 0ms"})
 
-    resistance = data.get("resistance", {})
-    privacy_browser = resistance.get("privacy") if isinstance(resistance, dict) else None
-    nav = data.get("navigator", {})
-    ua_lower = (nav.get("userAgent", "") or "").lower()
-
-    if not privacy_browser and "brave" in ua_lower:
-        privacy_browser = "Brave"
-    if privacy_browser in ("Brave", "Tor Browser", "Firefox"):
-        privacy_expected = {
-            "no_plugins",
-            "canvas_noise",
-            "no_webrtc",
-            "iframe_proxy",  # Brave blocks chrome in iframe srcdoc
-            "audio_sample_mismatch",  # Brave may randomize audio
-            "audio_all_unique",  # Brave audio randomization can cause all-unique samples
-            "no_web_share",  # Brave strips Web Share API
-            "api_lies",  # Brave patches audio APIs (getChannelData, etc.)
-            "no_content_index",  # Brave/Tor may strip ContentIndex
-            "no_contacts_manager",  # Brave/Tor may strip ContactsManager
-            "pdf_viewer_disabled",  # Tor disables PDF viewer
-        }
-        signals = [s for s in signals if s["signal"] not in privacy_expected]
-
     return signals
 
 
-def detect_resistance(data):
+def _suppress_privacy_signals(signals: list[dict[str, str]], data: dict[str, Any]) -> list[dict[str, str]]:
+    """Remove expected signals for verified privacy browsers."""
+    resistance = data.get("resistance", {})
+    privacy_browser = resistance.get("privacy") if isinstance(resistance, dict) else None
+
+    if privacy_browser not in ("Brave", "Tor Browser", "Firefox"):
+        return signals
+
+    return [s for s in signals if s["signal"] not in PRIVACY_EXPECTED_SIGNALS]
+
+
+def detect_bot_signals(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Detect bot/automation signals from collected data.
+
+    Returns list of triggered signals with severity.
+    """
+    signals: list[dict[str, str]] = []
+
+    nav = data.get("navigator", {})
+    if nav.get("webdriver"):
+        signals.append({"signal": "webdriver", "severity": "critical", "detail": "navigator.webdriver is true"})
+
+    signals.extend(_check_headless_signals(data))
+    signals.extend(_check_lie_signals(data))
+    signals.extend(_check_audio_canvas_signals(data))
+    signals.extend(_check_client_litter_signals(data))
+    signals.extend(_check_environment_signals(data))
+
+    return _suppress_privacy_signals(signals, data)
+
+
+def detect_resistance(data: dict[str, Any]) -> dict[str, Any]:
     """Classify privacy/resistance browser from resistance collector data."""
     resistance = data.get("resistance", {})
     if not isinstance(resistance, dict):

@@ -29,26 +29,26 @@ async function collectCanvas() {
             // 7. System font availability
             fontMetrics: testFontMetrics(),
 
-            // 8. Line styles — compares how lineCap and lineJoin are rendered
+            // 8. Line styles - compares how lineCap and lineJoin are rendered
             lineStyles: testLineStyles(ctx),
 
 
-            // 9. Curves — bezier and quadratic curves. Subtle rendering differences
+            // 9. Curves - bezier and quadratic curves. Subtle rendering differences
             curves: testCurves(ctx),
 
-            // 10. Image scaling — draws and scales a test pattern with imageSmoothingEnabled.
+            // 10. Image scaling - draws and scales a test pattern with imageSmoothingEnabled.
             imageScaling: testImageScaling(ctx),
 
-            // 11. Sub-pixel rendering — draws lines at fractional pixel positions.
+            // 11. Sub-pixel rendering - draws lines at fractional pixel positions.
             subPixel: testSubPixel(ctx),
 
-            // 12. WebGL capabilities — queries vendor/renderer, supported extensions,
+            // 12. WebGL capabilities - queries vendor/renderer, supported extensions,
             webgl: testWebGL(),
 
-            // 13. Pixel noise detection — two-pass rendering to detect canvas randomization
+            // 13. Pixel noise detection - two-pass rendering to detect canvas randomization
             pixelNoise: testPixelNoise(),
 
-            // 14. Emoji rendering dimensions — varies by OS/renderer
+            // 14. Emoji rendering dimensions - varies by OS/renderer
             emojiMetrics: testEmojiMetrics()
         };
 
@@ -82,7 +82,7 @@ function testTextRendering(ctx) {
 
     // Test different fonts and characters
     const fontTests = [
-        { font: "20px Arial", text: "Canvas FP — Arial 😎", x: 10, y: 30 },
+        { font: "20px Arial", text: "Canvas FP - Arial 😎", x: 10, y: 30 },
         { font: "20px 'Times New Roman'", text: "𝌆 𝄞 Σ ε", x: 10, y: 60 },
         { font: "20px Courier New", text: "Shadow test", x: 10, y: 90 }
     ];
