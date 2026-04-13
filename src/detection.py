@@ -320,10 +320,19 @@ def _check_audio_canvas_signals(data: dict[str, Any]) -> list[dict[str, str]]:
     """Check audio and canvas data for manipulation indicators."""
     signals: list[dict[str, str]] = []
 
+    # Firefox produces deterministic but all-unique audio samples due to
+    # full-precision floats in OfflineAudioContext (stable per CPU arch since FF134).
+    # Skip the all_unique flag for Firefox to avoid false positives.
+    nav = data.get("navigator", {})
+    ua_lower = (nav.get("userAgent", "") or "").lower()
+    is_firefox = "firefox" in ua_lower
+
     audio = data.get("audio", {})
     audio_result = datasets.match_audio_pattern(audio)
     if audio_result.get("suspicious"):
         for flag in audio_result["flags"]:
+            if flag["flag"] == "all_unique" and is_firefox:
+                continue
             signals.append(
                 {
                     "signal": "audio_" + flag["flag"],

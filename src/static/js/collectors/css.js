@@ -5,8 +5,8 @@ function collectCSSFeatures() {
         "display: flex",
 
         // Visual effects (version-gated)
-        "backdrop-filter",
-        "scroll-snap-type",
+        "backdrop-filter: blur(10px)",
+        "scroll-snap-type: x mandatory",
         "accent-color: red",
         "color: lab(50% 40 30)",
         "color: oklch(70% 0.15 180)",

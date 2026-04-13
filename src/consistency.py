@@ -438,14 +438,15 @@ def check_codec_consistency(data: dict[str, Any]) -> dict[str, Any]:
         if not audio.get("opus"):
             issues.append("Chrome UA but Opus not supported")
 
-    # Firefox: should support VP8, VP9, Opus, Theora
-    # Note: Theora depends on system codecs on Linux; modern distros often don't ship it
-    if "firefox" in ua:
+    # Firefox: should support VP8, VP9, Opus, Theora (Theora removed in FF130)
+    firefox_codec_match = re.search(r"firefox/(\d+)", ua)
+    if firefox_codec_match:
+        ff_codec_ver = int(firefox_codec_match.group(1))
         platform_str = (nav.get("platform", "") or "").lower()
         is_linux = "linux" in platform_str or "linux" in ua
         if not video.get("vp8"):
             issues.append("Firefox UA but VP8 not supported")
-        if not video.get("theora") and not is_linux:
+        if not video.get("theora") and not is_linux and ff_codec_ver < 130:
             issues.append("Firefox UA but Theora not supported")
         if not audio.get("opus"):
             issues.append("Firefox UA but Opus not supported")
@@ -502,7 +503,7 @@ def check_css_consistency(data: dict[str, Any]) -> dict[str, Any]:
     if chrome_match:
         chrome_ver = int(chrome_match.group(1))
         chrome_features = [
-            (76, "backdrop-filter"),
+            (76, "backdrop-filter: blur(10px)"),
             (93, "accent-color: red"),
             (105, "container-type: inline-size"),
             (111, "color: lab(50% 40 30)"),
@@ -517,7 +518,7 @@ def check_css_consistency(data: dict[str, Any]) -> dict[str, Any]:
     if firefox_match:
         ff_ver = int(firefox_match.group(1))
         ff_features = [
-            (103, "backdrop-filter"),
+            (103, "backdrop-filter: blur(10px)"),
             (113, "color: lab(50% 40 30)"),
             (117, "selector(&)"),
             (121, "container-type: inline-size"),
