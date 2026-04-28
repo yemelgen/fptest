@@ -146,17 +146,21 @@ img {
 }
 #output summary::before,
 #output .json-row::before {
-    content: "\25B6";
+    content: "";
     display: inline-block;
-    width: 14px;
-    font-size: 10px;
-    color: transparent;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    margin-right: 6px;
+    vertical-align: middle;
 }
 #output .json-row:has(> details)::before {
     display: none;
 }
 #output summary::before {
-    color: #cc9933;
+    border-left-color: #cc9933;
     transition: transform 0.15s;
 }
 #output details[open] > summary::before {
